@@ -272,12 +272,14 @@
 .analysis-card.feedback {
   border-color: #14b8a6; /* teal */
   position: relative;
+  text-decoration: none;
 }
 
 .analysis-card.feedback:hover,
 .analysis-card.feedback.hovered {
   background: rgba(20, 184, 166, 0.1);
   border-color: #14b8a6;
+  text-decoration: none;
 }
 
 .feedback-close-btn {
