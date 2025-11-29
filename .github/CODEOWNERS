@@ -1,0 +1,10 @@
+# CODEOWNERS - Automatically request review from code owners
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @Koifman
+
+# Specific ownership examples (uncomment if you want to be more specific):
+# /src/** @Koifman
+# /docs/** @Koifman
+# /.github/** @Koifman
