@@ -108,7 +108,12 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
 
       // Only fetch live models if API key is available
       if (hasKey && apiKey) {
-        const liveModels = await fetchAvailableModels(provider, { apiKey });
+        // For providers that require endpoint (like Ollama), pass it in the config
+        const endpoint = meta?.requiresEndpoint ? apiKey : undefined;
+        const liveModels = await fetchAvailableModels(provider, {
+          apiKey: meta?.requiresApiKey ? apiKey : '',
+          endpoint
+        });
         const fallback = liveModels.length > 0 ? liveModels : getAvailableModels(provider);
         setAvailableModels(fallback);
 
@@ -624,13 +629,17 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
                         ).join('\n\n');
                         const followUpPrompt = `Previous conversation:\n${previousMessages}\n\nUser follow-up:\n${userQuestion}`;
 
+                        // For providers that require endpoint (like Ollama), get it from stored apiKey
+                        const endpoint = meta?.requiresEndpoint ? getAPIKey(provider) : undefined;
+
                         const response = await sendAnalysisRequest(
                           provider,
                           {
                             apiKey: apiKey || '',
                             model: model || '',
                             temperature: 0.7,
-                            maxTokens: maxTokens || 4000
+                            maxTokens: maxTokens || 4000,
+                            endpoint: endpoint || undefined,
                           },
                           // keep system prompt fixed
                           lastFormattedPrompt?.systemPrompt || formattedPrompt?.systemPrompt || '',
