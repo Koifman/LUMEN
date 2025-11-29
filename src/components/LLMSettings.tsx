@@ -250,6 +250,17 @@ export default function LLMSettings({ onClose, onConfigChange }: LLMSettingsProp
                       <p className="help-text">
                         Your local Ollama server endpoint (default: http://localhost:11434)
                       </p>
+                      <p className="help-text" style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
+                        <strong>Accessing remotely?</strong> If you're accessing LUMEN from another device or getting CORS errors, you'll need to configure Ollama to allow remote connections.{' '}
+                        <a
+                          href="https://objectgraph.com/blog/ollama-cors/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ textDecoration: 'underline' }}
+                        >
+                          See this guide →
+                        </a>
+                      </p>
                     </div>
                   )}
                 </div>
