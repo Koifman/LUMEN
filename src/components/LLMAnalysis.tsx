@@ -108,7 +108,12 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
 
       // Only fetch live models if API key is available
       if (hasKey && apiKey) {
-        const liveModels = await fetchAvailableModels(provider, { apiKey });
+        // For providers that require endpoint (like Ollama), pass it in the config
+        const endpoint = meta?.requiresEndpoint ? apiKey : undefined;
+        const liveModels = await fetchAvailableModels(provider, {
+          apiKey: meta?.requiresApiKey ? apiKey : '',
+          endpoint
+        });
         const fallback = liveModels.length > 0 ? liveModels : getAvailableModels(provider);
         setAvailableModels(fallback);
 
