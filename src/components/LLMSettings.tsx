@@ -57,7 +57,7 @@ export default function LLMSettings({ onClose, onConfigChange }: LLMSettingsProp
 
   const handleValidate = async () => {
     const meta = getProviderMetadata(selectedProvider);
-    
+
     // For providers that don't require API keys (like Ollama), just check service availability
     if (meta && !meta.requiresApiKey) {
       setIsValidating(true);
@@ -65,8 +65,11 @@ export default function LLMSettings({ onClose, onConfigChange }: LLMSettingsProp
       setValidationMessage('Checking service availability...');
 
       try {
-        const isValid = await validateAPIKey(selectedProvider, '');
+        // Pass the endpoint URL as the apiKey parameter for validation
+        const isValid = await validateAPIKey(selectedProvider, apiKey || '');
         if (isValid) {
+          // Save the endpoint URL
+          storeAPIKey(selectedProvider, apiKey || 'http://localhost:11434');
           setValidationStatus('valid');
           setValidationMessage('Service is available');
           if (onConfigChange) {
@@ -230,6 +233,25 @@ export default function LLMSettings({ onClose, onConfigChange }: LLMSettingsProp
                   <p className="help-text">
                     This provider does not require an API key.
                   </p>
+                  {meta?.requiresEndpoint && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <label>Endpoint URL</label>
+                      <input
+                        type="text"
+                        value={apiKey}
+                        onChange={(e) => {
+                          setApiKey(e.target.value);
+                          setValidationStatus('idle');
+                          setValidationMessage('');
+                        }}
+                        placeholder="http://localhost:11434"
+                        className="api-key-input"
+                      />
+                      <p className="help-text">
+                        Your local Ollama server endpoint (default: http://localhost:11434)
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             }

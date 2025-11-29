@@ -149,6 +149,9 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
       const formatted = formatDataForLLM(sigmaMatches, data);
       setLastFormattedPrompt({ systemPrompt: formatted.systemPrompt, userPrompt: formatted.userPrompt });
 
+      // For providers that require endpoint (like Ollama), get it from stored apiKey
+      const endpoint = meta?.requiresEndpoint ? getAPIKey(provider) : undefined;
+
       // Send to LLM
       const response = await sendAnalysisRequest(
         provider,
@@ -157,6 +160,7 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
           model: chosenModel || '',
           temperature: 0.7,
           maxTokens: maxTokens || 4000,
+          endpoint: endpoint || undefined,
         },
         formatted.systemPrompt,
         formatted.userPrompt
@@ -230,6 +234,9 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
       // Create simplified user prompt for file-based analysis
       const fileBasedUserPrompt = `Analyze the three attached files and provide comprehensive security insights and recommendations.`;
 
+      // For providers that require endpoint (like Ollama), get it from stored apiKey
+      const endpoint = meta?.requiresEndpoint ? getAPIKey(provider) : undefined;
+
       // Send to LLM with files (system prompt only, user prompt is minimal)
       const response = await sendAnalysisRequestWithFiles(
         provider,
@@ -238,6 +245,7 @@ export default function LLMAnalysis({ data, sigmaMatches, onBack }: LLMAnalysisP
           model: chosenModel || '',
           temperature: 0.7,
           maxTokens: maxTokens || 4000,
+          endpoint: endpoint || undefined,
         },
         files,
         formatted.systemPrompt,

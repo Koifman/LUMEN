@@ -25,7 +25,8 @@ export interface ParsedData {
 export type LLMProvider =
   | 'openai'
   | 'anthropic'
-  | 'google';
+  | 'google'
+  | 'ollama';
 
 export interface ChartDataPoint {
   time: string;

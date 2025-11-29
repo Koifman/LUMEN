@@ -25,6 +25,10 @@ const providerLoaders: Map<LLMProvider, () => Promise<LLMProviderInterface>> = n
     const { GoogleProvider } = await import('./providers/google');
     return new GoogleProvider();
   }],
+  ['ollama', async () => {
+    const { OllamaProvider } = await import('./providers/ollama');
+    return new OllamaProvider();
+  }],
 ]);
 
 /**
@@ -77,6 +81,16 @@ export const providerMetadata: Map<LLMProvider, ProviderMetadata> = new Map([
     models: ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.5-flash'],
     apiKeyUrl: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
+  }],
+  ['ollama', {
+    id: 'ollama',
+    name: 'Ollama (Local)',
+    description: 'Local LLM server running on your machine',
+    requiresApiKey: false,
+    requiresEndpoint: true,
+    defaultModel: 'llama2',
+    models: [],
+    docsUrl: 'https://ollama.ai/library',
   }],
 ]);
 
@@ -160,6 +174,17 @@ export async function validateAPIKey(
 
   if (!providerInstance) {
     return false;
+  }
+
+  // For providers that don't require API keys (like Ollama), validate endpoint instead
+  const metadata = providerMetadata.get(provider);
+  if (!metadata?.requiresApiKey) {
+    // For Ollama, we still call validateAPIKey to check server connectivity
+    try {
+      return await providerInstance.validateAPIKey(apiKey || '');
+    } catch {
+      return false;
+    }
   }
 
   if (!apiKey || apiKey.trim().length === 0) {
