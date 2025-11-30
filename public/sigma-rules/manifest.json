@@ -2,17 +2,17 @@
   "wmi_event": {
     "file": "wmi_event.json",
     "ruleCount": 3,
-    "sizeBytes": 3561
+    "sizeBytes": 3485
   },
   "sysmon": {
     "file": "sysmon.json",
     "ruleCount": 6,
-    "sizeBytes": 5402
+    "sizeBytes": 5499
   },
   "registry": {
     "file": "registry.json",
     "ruleCount": 241,
-    "sizeBytes": 388104
+    "sizeBytes": 397327
   },
   "raw_access_thread": {
     "file": "raw_access_thread.json",
@@ -26,8 +26,8 @@
   },
   "process_creation": {
     "file": "process_creation.json",
-    "ruleCount": 1151,
-    "sizeBytes": 1819417
+    "ruleCount": 1154,
+    "sizeBytes": 1834361
   },
   "process_access": {
     "file": "process_access.json",
@@ -37,7 +37,7 @@
   "powershell": {
     "file": "powershell.json",
     "ruleCount": 207,
-    "sizeBytes": 308808
+    "sizeBytes": 309049
   },
   "pipe_created": {
     "file": "pipe_created.json",
@@ -46,18 +46,18 @@
   },
   "network_connection": {
     "file": "network_connection.json",
-    "ruleCount": 50,
-    "sizeBytes": 116714
+    "ruleCount": 51,
+    "sizeBytes": 118135
   },
   "image_load": {
     "file": "image_load.json",
-    "ruleCount": 96,
-    "sizeBytes": 151810
+    "ruleCount": 97,
+    "sizeBytes": 153730
   },
   "file": {
     "file": "file.json",
     "ruleCount": 184,
-    "sizeBytes": 269286
+    "sizeBytes": 270742
   },
   "driver_load": {
     "file": "driver_load.json",
@@ -66,13 +66,13 @@
   },
   "dns_query": {
     "file": "dns_query.json",
-    "ruleCount": 20,
-    "sizeBytes": 38440
+    "ruleCount": 21,
+    "sizeBytes": 39794
   },
   "create_stream_hash": {
     "file": "create_stream_hash.json",
     "ruleCount": 9,
-    "sizeBytes": 22728
+    "sizeBytes": 22697
   },
   "create_remote_thread": {
     "file": "create_remote_thread.json",
@@ -81,7 +81,7 @@
   },
   "builtin": {
     "file": "builtin.json",
-    "ruleCount": 321,
-    "sizeBytes": 443563
+    "ruleCount": 322,
+    "sizeBytes": 444378
   }
 }
