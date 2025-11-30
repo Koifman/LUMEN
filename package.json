@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run bundle:sigma && tsc && vite build",
+    "build": "npm run sync:sigma && npm run bundle:sigma && tsc && vite build",
     "preview": "vite preview",
     "sync:sigma": "node scripts/sync-sigma.js",
     "bundle:sigma": "node scripts/bundle-sigma-rules.js"
