@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { LogEntry } from '../types';
 import { getSeverityColor, getSeverityIcon } from '../lib/sigmaRules';
 import { SigmaEngine } from '../lib/sigma';
@@ -7,7 +7,6 @@ import {
   processEventsOptimized,
   OptimizedMatchStats
 } from '../lib/sigma/engine/optimizedMatcher';
-import SigmaRuleLoader from './SigmaRuleLoader';
 import './SigmaDetections.css';
 
 // ============================================================================
@@ -75,7 +74,6 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
   const [isLoading, setIsLoading] = useState(!(cachedMatches && cachedMatches.size > 0));
   const [progress, setProgress] = useState({ processed: 0, total: 0, matchesFound: 0 });
   const [optimizationStats, setOptimizationStats] = useState<OptimizedMatchStats | null>(null);
-  const [showRuleLoader, setShowRuleLoader] = useState(false);
 
   // Virtual scrolling state
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
@@ -260,14 +258,6 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
   // Get total rule count from engine
   const totalRules = sigmaEngine?.getAllRules().length || 0;
 
-  // Handler for when custom rules are loaded
-  const handleCustomRulesLoaded = useCallback((_count: number) => {
-    // Clear existing matches and re-run analysis with new rules
-    setMatches(new Map());
-    setShowRuleLoader(false);
-    // The useEffect will automatically re-run analysis when matches are cleared
-  }, []);
-
   return (
     <div className="sigma-detections">
       <div className="sigma-header">
@@ -277,33 +267,7 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
             Automated detection using {totalRules} security rules
           </p>
         )}
-        <button
-          onClick={() => setShowRuleLoader(!showRuleLoader)}
-          className="load-custom-rules-button"
-          style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1.5rem',
-            background: showRuleLoader ? 'var(--accent-orange)' : 'var(--accent-blue)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.95rem',
-            fontWeight: '600',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          {showRuleLoader ? '✕ Close Rule Loader' : '📂 Load Custom SIGMA Rules'}
-        </button>
       </div>
-
-      {/* Custom Rule Loader */}
-      {showRuleLoader && sigmaEngine && (
-        <SigmaRuleLoader
-          engine={sigmaEngine}
-          onRulesLoaded={handleCustomRulesLoaded}
-        />
-      )}
 
       {/* Statistics Summary */}
       <div className="sigma-summary">

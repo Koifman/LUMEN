@@ -1,19 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { getAvailablePlatforms, SigmaPlatform } from '../lib/sigma/utils/autoLoadRules';
+import SigmaRuleLoader from './SigmaRuleLoader';
 import './SigmaPlatformSelector.css';
 
 interface SigmaPlatformSelectorProps {
   onSelect: (platform: SigmaPlatform, categories: string[]) => void;
   onBack: () => void;
+  sigmaEngine?: any;
 }
 
 const PLATFORM_CATEGORIES: Record<SigmaPlatform, string[]> = {
   windows: ['process_creation', 'image_load', 'network_connection', 'registry', 'file_event', 'pipe_created', 'powershell', 'process_access', 'dns_query', 'security', 'driver_load']
 };
 
-export default function SigmaPlatformSelector({ onSelect, onBack }: SigmaPlatformSelectorProps) {
+export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }: SigmaPlatformSelectorProps) {
   const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<SigmaPlatform | null>(null);
+  const [showRuleLoader, setShowRuleLoader] = useState(false);
   const platforms = getAvailablePlatforms();
   const categories = useMemo(() => {
     if (!selectedPlatform) return [];
@@ -37,6 +40,11 @@ export default function SigmaPlatformSelector({ onSelect, onBack }: SigmaPlatfor
     onSelect(selectedPlatform, selectedCategories);
   };
 
+  // Handler for when custom rules are loaded
+  const handleCustomRulesLoaded = useCallback((_count: number) => {
+    setShowRuleLoader(false);
+  }, []);
+
   return (
     <div className="platform-selector">
       <div className="platform-header">
@@ -50,7 +58,35 @@ export default function SigmaPlatformSelector({ onSelect, onBack }: SigmaPlatfor
           </div>
           <p className="tagline">Windows Event Log (EVTX) Detection Rules</p>
         </div>
+        <button
+          onClick={() => setShowRuleLoader(!showRuleLoader)}
+          className="load-custom-rules-button"
+          style={{
+            marginTop: '1rem',
+            padding: '0.75rem 1.5rem',
+            background: showRuleLoader ? 'var(--accent-orange)' : 'var(--accent-blue)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          {showRuleLoader ? '✕ Close Rule Loader' : '📂 Load Custom SIGMA Rules'}
+        </button>
       </div>
+
+      {/* Custom Rule Loader */}
+      {showRuleLoader && sigmaEngine && (
+        <div style={{ marginBottom: '2rem' }}>
+          <SigmaRuleLoader
+            engine={sigmaEngine}
+            onRulesLoaded={handleCustomRulesLoaded}
+          />
+        </div>
+      )}
 
       <div className="platform-cards">
         {platforms.map((platform) => (

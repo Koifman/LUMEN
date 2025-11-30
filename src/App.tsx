@@ -166,6 +166,7 @@ function App() {
           <LazySigmaPlatformSelector
             onSelect={handlePlatformSelect}
             onBack={handleBackFromPlatformSelector}
+            sigmaEngine={sigmaEngine}
           />
         </Suspense>
       </ErrorBoundary>
