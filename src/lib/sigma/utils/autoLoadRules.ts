@@ -11,7 +11,7 @@ import { SigmaEngine } from '../SigmaEngine';
  * Supported SIGMA rule platforms
  * Only Windows is supported for EVTX file analysis
  */
-export type SigmaPlatform = 'windows';
+export type SigmaPlatform = 'windows' | 'chainsaw';
 
 /**
  * Platform metadata for UI display
@@ -76,10 +76,17 @@ export function getAvailablePlatforms(): PlatformInfo[] {
   return [
     {
       id: 'windows',
-      name: 'Windows',
+      name: 'Windows - Official SIGMA',
       description: 'Windows Event Logs (EVTX), Sysmon, PowerShell, Security events',
       icon: '💠',
       ruleCount: 2349 // Total from build script
+    },
+    {
+      id: 'chainsaw',
+      name: 'Chainsaw',
+      description: 'Windows-focused threat hunting rules (TAU format - coming soon)',
+      icon: '🪚',
+      ruleCount: 0 // Will be available when TAU engine is implemented
     }
   ];
 }

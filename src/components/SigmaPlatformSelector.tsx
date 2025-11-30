@@ -10,7 +10,8 @@ interface SigmaPlatformSelectorProps {
 }
 
 const PLATFORM_CATEGORIES: Record<SigmaPlatform, string[]> = {
-  windows: ['process_creation', 'image_load', 'network_connection', 'registry', 'file_event', 'pipe_created', 'powershell', 'process_access', 'dns_query', 'security', 'driver_load']
+  windows: ['process_creation', 'image_load', 'network_connection', 'registry', 'file_event', 'pipe_created', 'powershell', 'process_access', 'dns_query', 'security', 'driver_load'],
+  chainsaw: [] // Will be populated when TAU engine is implemented
 };
 
 export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }: SigmaPlatformSelectorProps) {
@@ -144,10 +145,6 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
           </div>
         </div>
       )}
-
-      <div className="platform-note">
-        LUMEN supports Windows Event Logs (EVTX) only. Filter categories to speed up rule loading.
-      </div>
     </div>
   );
 }
