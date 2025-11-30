@@ -7,9 +7,10 @@ interface SigmaPlatformSelectorProps {
   onSelect: (platform: SigmaPlatform, categories: string[]) => void;
   onBack: () => void;
   sigmaEngine?: any;
+  onCustomRulesLoaded?: (count: number) => void;
 }
 
-export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }: SigmaPlatformSelectorProps) {
+export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine, onCustomRulesLoaded }: SigmaPlatformSelectorProps) {
   const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<SigmaPlatform | null>(null);
   const [showRuleLoader, setShowRuleLoader] = useState(false);
@@ -57,9 +58,13 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
   };
 
   // Handler for when custom rules are loaded
-  const handleCustomRulesLoaded = useCallback((_count: number) => {
+  const handleCustomRulesLoaded = useCallback((count: number) => {
     setShowRuleLoader(false);
-  }, []);
+    // Notify parent component about loaded custom rules
+    if (onCustomRulesLoaded) {
+      onCustomRulesLoaded(count);
+    }
+  }, [onCustomRulesLoaded]);
 
   return (
     <div className="platform-selector">
@@ -74,24 +79,25 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
           </div>
           <p className="tagline">Windows Event Log (EVTX) Detection Rules</p>
         </div>
-        <button
-          onClick={() => setShowRuleLoader(!showRuleLoader)}
-          className="load-custom-rules-button"
-          style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1.5rem',
-            background: showRuleLoader ? 'var(--accent-orange)' : 'var(--accent-blue)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.95rem',
-            fontWeight: '600',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          {showRuleLoader ? '✕ Close Rule Loader' : '📂 Load Custom SIGMA Rules'}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+          <button
+            onClick={() => setShowRuleLoader(!showRuleLoader)}
+            className="load-custom-rules-button"
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: showRuleLoader ? 'var(--accent-orange)' : 'var(--accent-blue)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {showRuleLoader ? '✕ Close Rule Loader' : '📂 Load Custom SIGMA Rules'}
+          </button>
+        </div>
       </div>
 
       {/* Custom Rule Loader */}

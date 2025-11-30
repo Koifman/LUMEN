@@ -1,22 +1,23 @@
 .sigma-rule-loader {
   background: var(--bg-hover);
   border-radius: 12px;
-  padding: 2rem;
-  margin: 2rem 0;
+  padding: 1.5rem;
+  margin: 1.5rem auto;
   backdrop-filter: blur(10px);
+  max-width: 600px;
 }
 
 .sigma-rule-loader h3 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1rem 0;
   color: var(--text-primary);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
 }
 
 /* Drop Zone for SIGMA Rule Loader */
 .sigma-rule-loader .sigma-drop-zone {
   border: 2px dashed var(--border-primary);
   border-radius: 8px;
-  padding: 3rem 2rem;
+  padding: 1.5rem 1.5rem;
   text-align: center;
   transition: all 0.3s ease;
   background: var(--bg-card);
@@ -42,18 +43,18 @@
 }
 
 .drop-icon {
-  font-size: 4rem;
+  font-size: 2.5rem;
   opacity: 0.7;
 }
 
 .sigma-rule-loader .sigma-drop-zone p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 .drop-hint {
-  font-size: 0.9rem !important;
+  font-size: 0.8rem !important;
   color: var(--text-dim) !important;
 }
 
@@ -61,12 +62,13 @@
 .file-button {
   background: var(--accent-blue);
   color: var(--bg-primary);
-  padding: 0.75rem 2rem;
+  padding: 0.6rem 1.5rem;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-block;
+  font-size: 0.9rem;
 }
 
 .file-button:hover {

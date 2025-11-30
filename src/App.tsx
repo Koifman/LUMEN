@@ -116,6 +116,18 @@ function App() {
     setCurrentView('select');
   };
 
+  const handleCustomRulesLoaded = async (count: number) => {
+    console.log(`Loaded ${count} custom SIGMA rules`);
+    // If we have data, we can immediately analyze it with the new rules
+    if (parsedData) {
+      // Clear previous matches to force re-analysis
+      setSigmaMatches(new Map());
+      // Switch to analysis view to trigger SigmaDetections to run analysis
+      setAnalysisMode('sigma');
+      setCurrentView('analysis');
+    }
+  };
+
   const handleLoadSession = (
     data: ParsedData,
     name: string,
@@ -167,6 +179,7 @@ function App() {
             onSelect={handlePlatformSelect}
             onBack={handleBackFromPlatformSelector}
             sigmaEngine={sigmaEngine}
+            onCustomRulesLoaded={handleCustomRulesLoaded}
           />
         </Suspense>
       </ErrorBoundary>
