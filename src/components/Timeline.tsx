@@ -13,9 +13,29 @@ interface TimelineFilters {
 
 /**
  * Format selection definition for tooltip display
+ * If matchedPattern is provided, only show that specific pattern value
  */
-function formatSelectionForTooltip(selection: any, selectionName: string): string {
+function formatSelectionForTooltip(
+  selection: any,
+  selectionName: string,
+  fieldName?: string,
+  matchedPattern?: string | number | null | (string | number | null)[]
+): string {
   if (!selection) return `${selectionName}: (no definition available)`;
+
+  // If we have a matched pattern, show only that specific value
+  if (matchedPattern !== undefined && fieldName) {
+    // Handle array of patterns (for requireAll conditions)
+    if (Array.isArray(matchedPattern)) {
+      let yaml = `${selectionName}:\n  ${fieldName}:\n`;
+      matchedPattern.forEach(pattern => {
+        yaml += `    - '${pattern}'\n`;
+      });
+      return yaml.trim();
+    }
+    // Single pattern
+    return `${selectionName}:\n  ${fieldName}: '${matchedPattern}'`;
+  }
 
   try {
     // Convert to YAML-like format
@@ -518,6 +538,7 @@ export default function Timeline({ matches, onBack }: TimelineProps) {
                         selection: string;
                         selectionDef?: any;
                         modifier?: string;
+                        matchedPattern?: string | number | null | (string | number | null)[];
                       }> = [];
 
                       if (event.match.selectionMatches) {
@@ -537,7 +558,8 @@ export default function Timeline({ matches, onBack }: TimelineProps) {
                                   value: fm.value,
                                   selection: selMatch.selection,
                                   selectionDef: selectionDef,
-                                  modifier: fm.modifier
+                                  modifier: fm.modifier,
+                                  matchedPattern: fm.matchedPattern
                                 });
                               }
                             }
@@ -549,7 +571,12 @@ export default function Timeline({ matches, onBack }: TimelineProps) {
 
                       return (
                         <div className="matched-fields">
-                          <div className="matched-fields-header">Matched Fields:</div>
+                          <div className="matched-fields-header">
+                            Matched Fields:
+                            <span style={{ fontSize: '0.7rem', fontWeight: 'normal', marginLeft: '0.5rem', color: 'var(--text-dim)' }}>
+                              (Tooltip hover shows only the exact values that a condition matched against and NOT the entire list)
+                            </span>
+                          </div>
                           {allFieldMatches.map((fm, fmIdx) => (
                             <div key={fmIdx} className="field-match">
                               <div className="field-match-header">
@@ -563,7 +590,7 @@ export default function Timeline({ matches, onBack }: TimelineProps) {
                                   </span>
                                   {fm.selectionDef && (
                                     <span className="field-selection-tooltip">
-                                      <pre>{formatSelectionForTooltip(fm.selectionDef, fm.selection)}</pre>
+                                      <pre>{formatSelectionForTooltip(fm.selectionDef, fm.selection, fm.field, fm.matchedPattern)}</pre>
                                     </span>
                                   )}
                                 </span>

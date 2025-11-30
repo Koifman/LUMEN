@@ -163,6 +163,7 @@ export interface FieldMatchResult {
   value: any;
   matched: boolean;
   modifier?: SigmaModifier;
+  matchedPattern?: string | number | null | (string | number | null)[]; // The specific pattern value(s) that caused the match
 }
 
 /**

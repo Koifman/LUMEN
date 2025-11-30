@@ -9,6 +9,7 @@ import {
 } from '../lib/sigma/engine/optimizedMatcher';
 import FileFilter from './FileFilter';
 import FileBreakdownStats from './FileBreakdownStats';
+import { EventDetailsModal } from './EventDetailsModal';
 import './SigmaDetections.css';
 
 // ============================================================================
@@ -19,9 +20,29 @@ const LOAD_MORE_COUNT = 10;        // Number of cards to add when scrolling
 
 /**
  * Format selection definition for tooltip display
+ * If matchedPattern is provided, only show that specific pattern value
  */
-function formatSelectionForTooltip(selection: any, selectionName: string): string {
+function formatSelectionForTooltip(
+  selection: any,
+  selectionName: string,
+  fieldName?: string,
+  matchedPattern?: string | number | null | (string | number | null)[]
+): string {
   if (!selection) return `${selectionName}: (no definition available)`;
+
+  // If we have a matched pattern, show only that specific value
+  if (matchedPattern !== undefined && fieldName) {
+    // Handle array of patterns (for requireAll conditions)
+    if (Array.isArray(matchedPattern)) {
+      let yaml = `${selectionName}:\n  ${fieldName}:\n`;
+      matchedPattern.forEach(pattern => {
+        yaml += `    - '${pattern}'\n`;
+      });
+      return yaml.trim();
+    }
+    // Single pattern
+    return `${selectionName}:\n  ${fieldName}: '${matchedPattern}'`;
+  }
 
   try {
     // Convert to YAML-like format
@@ -79,6 +100,11 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
   const [optimizationStats, setOptimizationStats] = useState<OptimizedMatchStats | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+
+  // Modal state for viewing raw event
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState<string>('');
 
   // Virtual scrolling state
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
@@ -278,6 +304,16 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
     setExpandedRule(expandedRule === ruleId ? null : ruleId);
   };
 
+  // Handle opening event details modal
+  const handleViewEvent = (event: any, ruleTitle: string) => {
+    const eventData = event as any;
+    const eventId = eventData.EventID || eventData.eventId || 'Unknown';
+    const computer = eventData.Computer || eventData.computer || 'Unknown';
+    setModalTitle(`${ruleTitle} - Event ID: ${eventId} - ${computer}`);
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
   // Get total rule count from engine
   const totalRules = sigmaEngine?.getAllRules().length || 0;
 
@@ -393,24 +429,27 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
               <div
                 key={ruleId}
                 className={`sigma-match ${level}`}
-                style={{ borderLeftColor: getSeverityColor(level), cursor: 'pointer' }}
-                onClick={() => toggleExpand(ruleId)}
+                style={{ borderLeftColor: getSeverityColor(level) }}
               >
-                <div className="match-header">
-                  <div className="match-title">
-                    <span className="severity-icon">{getSeverityIcon(level)}</span>
-                    <div style={{ position: 'relative' }}>
-                      <h3
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(rule.title);
-                          setCopiedItem(`title-${ruleId}`);
-                        }}
-                        style={{ cursor: 'pointer !important', userSelect: 'none', margin: 0 }}
-                        title="Click to copy title"
-                      >
-                        {rule.title}
-                      </h3>
+                <div
+                  onClick={() => toggleExpand(ruleId)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="match-header">
+                    <div className="match-title">
+                      <span className="severity-icon">{getSeverityIcon(level)}</span>
+                      <div style={{ position: 'relative' }}>
+                        <h3
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(rule.title);
+                            setCopiedItem(`title-${ruleId}`);
+                          }}
+                          style={{ cursor: 'pointer !important', userSelect: 'none', margin: 0 }}
+                          title="Click to copy title"
+                        >
+                          {rule.title}
+                        </h3>
                       {copiedItem === `title-${ruleId}` && (
                         <span style={{
                           position: 'absolute',
@@ -475,7 +514,10 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                     <span className="match-count">
                       {ruleMatches.length} {ruleMatches.length === 1 ? 'event' : 'events'}
                     </span>
-                    <button className="expand-btn" onClick={() => toggleExpand(ruleId)}>
+                    <button className="expand-btn" onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpand(ruleId);
+                    }}>
                       {isExpanded ? '▼' : '▶'}
                     </button>
                   </div>
@@ -500,6 +542,7 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                     </span>
                   )}
                 </div>
+                </div>
 
                 {/* Expandable Details */}
                 {isExpanded && (
@@ -514,6 +557,7 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                           selection: string;
                           selectionDef?: any;
                           modifier?: string;
+                          matchedPattern?: string | number | null | (string | number | null)[];
                         }> = [];
 
                         if (match.selectionMatches && match.selectionMatches.length > 0) {
@@ -542,7 +586,8 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                                   value: fm.value,
                                   selection: selMatch.selection,
                                   selectionDef: selectionDef,
-                                  modifier: fm.modifier
+                                  modifier: fm.modifier,
+                                  matchedPattern: fm.matchedPattern
                                 });
                               }
                             }
@@ -554,8 +599,20 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
 
                         return (
                           <div key={idx} className="matched-event">
-                            <div className="event-time">
-                              {timestamp instanceof Date ? timestamp.toLocaleString() : new Date(timestamp).toLocaleString()}
+                            <div className="event-header-row">
+                              <div className="event-time">
+                                {timestamp instanceof Date ? timestamp.toLocaleString() : new Date(timestamp).toLocaleString()}
+                              </div>
+                              <button
+                                className="view-event-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewEvent(eventData, rule.title);
+                                }}
+                                title="View complete event details"
+                              >
+                                📄 View Raw Event
+                              </button>
                             </div>
                             <div className="event-info">
                               <span>Computer: {eventData.Computer || eventData.computer || 'N/A'}</span>
@@ -564,7 +621,12 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                             </div>
                             {allFieldMatches.length > 0 && (
                               <div className="matched-fields">
-                                <div className="matched-fields-header">Matched Fields:</div>
+                                <div className="matched-fields-header">
+                                  Matched Fields:
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 'normal', marginLeft: '0.5rem', color: 'var(--text-dim)' }}>
+                                    (Tooltip hover shows only the exact values that a condition matched against and NOT the entire list)
+                                  </span>
+                                </div>
                                 {allFieldMatches.map((fm, fmIdx) => (
                                   <div key={fmIdx} className="field-match">
                                     <div className="field-match-header">
@@ -581,7 +643,7 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
                                         </span>
                                         {fm.selectionDef && (
                                           <span className="field-selection-tooltip">
-                                            <pre>{formatSelectionForTooltip(fm.selectionDef, fm.selection)}</pre>
+                                            <pre>{formatSelectionForTooltip(fm.selectionDef, fm.selection, fm.field, fm.matchedPattern)}</pre>
                                           </span>
                                         )}
                                       </span>
@@ -647,6 +709,14 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
           )}
         </div>
       )}
+
+      {/* Event Details Modal */}
+      <EventDetailsModal
+        event={selectedEvent}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={modalTitle}
+      />
     </div>
   );
 }

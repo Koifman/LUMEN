@@ -8,18 +8,41 @@ function copySamplesPlugin() {
   return {
     name: 'copy-samples',
     closeBundle() {
+      const shouldExclude = (entry: string) => {
+        // Exclude hidden files, git files, and common unwanted files
+        return entry.startsWith('.') ||
+               entry === '.git' ||
+               entry === '.gitignore' ||
+               entry === '.DS_Store' ||
+               entry === 'Thumbs.db' ||
+               entry === 'desktop.ini';
+      };
+
+      const shouldIncludeFile = (filename: string) => {
+        // Only include EVTX files (case-insensitive)
+        return filename.toLowerCase().endsWith('.evtx');
+      };
+
       const copyRecursive = (src: string, dest: string) => {
         try {
           mkdirSync(dest, { recursive: true });
           const entries = readdirSync(src);
           for (const entry of entries) {
+            // Skip excluded files/folders
+            if (shouldExclude(entry)) {
+              continue;
+            }
+
             const srcPath = join(src, entry);
             const destPath = join(dest, entry);
             if (statSync(srcPath).isDirectory()) {
               copyRecursive(srcPath, destPath);
             } else {
-              copyFileSync(srcPath, destPath);
-              console.log(`Copied: ${srcPath} -> ${destPath}`);
+              // Only copy EVTX files
+              if (shouldIncludeFile(entry)) {
+                copyFileSync(srcPath, destPath);
+                console.log(`Copied: ${srcPath} -> ${destPath}`);
+              }
             }
           }
         } catch (error) {
