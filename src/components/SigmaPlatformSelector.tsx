@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getAvailablePlatformsWithCounts, SigmaPlatform, PlatformInfo } from '../lib/sigma/utils/autoLoadRules';
 import SigmaRuleLoader from './SigmaRuleLoader';
 import './SigmaPlatformSelector.css';

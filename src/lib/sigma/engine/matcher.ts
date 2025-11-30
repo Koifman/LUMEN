@@ -202,17 +202,23 @@ function evaluateSelection(event: any, selection: any): SelectionMatchResult {
 
     const fieldValue = extractField(event, condition.field);
     let matched = false;
+    let matchedPattern: string | number | null | (string | number | null)[] | undefined = undefined;
 
     // If requireAll is true, ALL values must match
     if (condition.requireAll) {
       matched = condition.values.every((targetValue: string | number | null) =>
         applyModifier(fieldValue, targetValue, condition.modifier)
       );
+      // For requireAll, store all values since they all must match
+      if (matched && condition.values.length > 0) {
+        matchedPattern = condition.values.length === 1 ? condition.values[0] : condition.values;
+      }
     } else {
       // Default: ANY value matches
       for (const targetValue of condition.values) {
         if (applyModifier(fieldValue, targetValue, condition.modifier)) {
           matched = true;
+          matchedPattern = targetValue; // Track which specific value matched
           break;
         }
       }
@@ -221,13 +227,16 @@ function evaluateSelection(event: any, selection: any): SelectionMatchResult {
     // Apply negation if needed
     if (condition.negate) {
       matched = !matched;
+      // For negated conditions, we don't show a specific matched pattern
+      matchedPattern = undefined;
     }
 
     fieldMatches.push({
       field: condition.field,
       value: fieldValue,
       matched,
-      modifier: condition.modifier
+      modifier: condition.modifier,
+      matchedPattern
     });
 
     if (matched) {

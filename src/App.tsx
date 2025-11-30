@@ -367,9 +367,9 @@ function SigmaAnalysisView({
   data,
   filename,
   sigmaEngine,
-  platform,
-  rulesLoading,
-  ruleLoadProgress,
+  platform: _platform,
+  rulesLoading: _rulesLoading,
+  ruleLoadProgress: _ruleLoadProgress,
   onBack,
   onMatchesUpdate,
   cachedMatches

@@ -251,7 +251,7 @@
 /* Column Headers */
 .log-header {
   display: grid;
-  grid-template-columns: 180px 120px 60px 80px 1fr;
+  grid-template-columns: 180px 120px 60px 80px 1fr 80px;
   gap: 1rem;
   padding: 0.75rem 1rem;
   background: var(--accent-blue-bg);
@@ -261,7 +261,7 @@
 }
 
 .log-header.evtx-header {
-  grid-template-columns: 180px 120px 80px 150px 1fr;
+  grid-template-columns: 180px 120px 80px 150px 1fr 80px;
 }
 
 .header-cell {
@@ -417,7 +417,7 @@
   padding: 0.5rem;
   border-bottom: 1px solid var(--border-secondary);
   display: grid;
-  grid-template-columns: 180px 120px 60px 80px 1fr;
+  grid-template-columns: 180px 120px 60px 80px 1fr 80px;
   gap: 1rem;
   align-items: center;
 }
@@ -481,9 +481,9 @@
   font-style: italic;
 }
 
-/* EVTX-specific styling - 5 columns: timestamp, computer, eventId, source, message */
+/* EVTX-specific styling - 6 columns: timestamp, computer, eventId, source, message, action */
 .evtx-entry {
-  grid-template-columns: 180px 120px 80px 150px 1fr;
+  grid-template-columns: 180px 120px 80px 150px 1fr 80px;
 }
 
 .log-computer {
@@ -541,6 +541,46 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Action Column */
+.action-header {
+  cursor: default !important;
+  justify-content: center;
+}
+
+.action-header:hover {
+  color: var(--accent-blue) !important;
+}
+
+.log-action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.view-details-btn {
+  padding: 0.375rem 0.5rem;
+  background: var(--accent-blue-bg);
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-details-btn:hover {
+  background: rgba(96, 165, 250, 0.2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-details-btn:active {
+  transform: translateY(0);
 }
 
 /* Scrollbar styling */

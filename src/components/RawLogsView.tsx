@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ParsedData, LogEntry } from '../types';
+import { EventDetailsModal } from './EventDetailsModal';
 import './Dashboard.css';
 
 interface RawLogsViewProps {
@@ -67,6 +68,10 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
   const [filterValue, setFilterValue] = useState('');
   const [filterOperator, setFilterOperator] = useState<FilterOperator>('contains');
 
+  // Modal state for viewing raw event
+  const [selectedEvent, setSelectedEvent] = useState<LogEntry | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Filtered entries
   const filteredEntries = useMemo(() => {
     const activeFilters = filters.filter(f => f.value);
@@ -107,6 +112,12 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
 
   // Get filter for a field
   const getFilterForField = (field: string) => filters.find(f => f.field === field);
+
+  // Handle opening event details modal
+  const handleViewEvent = (entry: LogEntry) => {
+    setSelectedEvent(entry);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="dashboard">
@@ -173,6 +184,9 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                     <span>Message</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
+                  <div className="header-cell action-header">
+                    <span>Actions</span>
+                  </div>
                 </>
               ) : (
                 <>
@@ -195,6 +209,9 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                   <div className={`header-cell ${getFilterForField('path') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'path' ? null : 'path')}>
                     <span>Path</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
+                  </div>
+                  <div className="header-cell action-header">
+                    <span>Actions</span>
                   </div>
                 </>
               )}
@@ -249,6 +266,15 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                       <span className="log-message" title={entry.message}>
                         {entry.message || 'No message'}
                       </span>
+                      <span className="log-action">
+                        <button
+                          className="view-details-btn"
+                          onClick={() => handleViewEvent(entry)}
+                          title="View complete event details"
+                        >
+                          👁️
+                        </button>
+                      </span>
                     </>
                   ) : (
                     <>
@@ -258,6 +284,15 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                       </span>
                       <span className="log-method">{entry.method}</span>
                       <span className="log-path">{entry.path}</span>
+                      <span className="log-action">
+                        <button
+                          className="view-details-btn"
+                          onClick={() => handleViewEvent(entry)}
+                          title="View complete event details"
+                        >
+                          👁️
+                        </button>
+                      </span>
                     </>
                   )}
                 </div>
@@ -276,6 +311,13 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
           </div>
         </div>
       </div>
+
+      {/* Event Details Modal */}
+      <EventDetailsModal
+        event={selectedEvent}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }
