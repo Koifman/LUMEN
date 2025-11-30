@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { LogEntry } from '../types';
 import { getSeverityColor, getSeverityIcon } from '../lib/sigmaRules';
 import { SigmaEngine } from '../lib/sigma';
