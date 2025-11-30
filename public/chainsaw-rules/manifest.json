@@ -1,0 +1,82 @@
+{
+  "service_tampering": {
+    "file": "service_tampering.json",
+    "ruleCount": 4,
+    "sizeBytes": 3554
+  },
+  "service_installation": {
+    "file": "service_installation.json",
+    "ruleCount": 12,
+    "sizeBytes": 18848
+  },
+  "rdp_attacks": {
+    "file": "rdp_attacks.json",
+    "ruleCount": 8,
+    "sizeBytes": 6920
+  },
+  "powershell": {
+    "file": "powershell.json",
+    "ruleCount": 3,
+    "sizeBytes": 6422
+  },
+  "persistence": {
+    "file": "persistence.json",
+    "ruleCount": 2,
+    "sizeBytes": 2392
+  },
+  "microsoft_rds_events": {
+    "file": "microsoft_rds_events.json",
+    "ruleCount": 9,
+    "sizeBytes": 8843
+  },
+  "microsoft_rasvpn_events": {
+    "file": "microsoft_rasvpn_events.json",
+    "ruleCount": 7,
+    "sizeBytes": 7882
+  },
+  "log_tampering": {
+    "file": "log_tampering.json",
+    "ruleCount": 2,
+    "sizeBytes": 1554
+  },
+  "login_attacks": {
+    "file": "login_attacks.json",
+    "ruleCount": 1,
+    "sizeBytes": 723
+  },
+  "lateral_movement": {
+    "file": "lateral_movement.json",
+    "ruleCount": 7,
+    "sizeBytes": 7211
+  },
+  "indicator_removal": {
+    "file": "indicator_removal.json",
+    "ruleCount": 1,
+    "sizeBytes": 779
+  },
+  "defense_evasion": {
+    "file": "defense_evasion.json",
+    "ruleCount": 2,
+    "sizeBytes": 1790
+  },
+  "credential_access": {
+    "file": "credential_access.json",
+    "ruleCount": 2,
+    "sizeBytes": 2143
+  },
+  "applocker": {
+    "file": "applocker.json",
+    "ruleCount": 6,
+    "sizeBytes": 6496
+  },
+  "antivirus": {
+    "file": "antivirus.json",
+    "ruleCount": 8,
+    "sizeBytes": 10777
+  },
+  "account_tampering": {
+    "file": "account_tampering.json",
+    "ruleCount": 4,
+    "sizeBytes": 3210
+  }
+}

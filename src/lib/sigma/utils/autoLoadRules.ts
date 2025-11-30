@@ -42,16 +42,17 @@ interface RuleFile {
 }
 
 /**
- * Cached manifest to avoid repeated fetches
+ * Cached manifests to avoid repeated fetches
  */
-let cachedManifest: Record<string, CategoryManifest> | null = null;
+let cachedSigmaManifest: Record<string, CategoryManifest> | null = null;
+let cachedChainsawManifest: Record<string, CategoryManifest> | null = null;
 
 /**
- * Fetch and cache the manifest
+ * Fetch and cache the SIGMA manifest
  */
-async function getManifest(): Promise<Record<string, CategoryManifest>> {
-  if (cachedManifest) {
-    return cachedManifest;
+async function getSigmaManifest(): Promise<Record<string, CategoryManifest>> {
+  if (cachedSigmaManifest) {
+    return cachedSigmaManifest;
   }
 
   try {
@@ -60,7 +61,28 @@ async function getManifest(): Promise<Record<string, CategoryManifest>> {
       throw new Error(`Failed to fetch manifest: ${response.statusText}`);
     }
     const manifest = await response.json();
-    cachedManifest = manifest;
+    cachedSigmaManifest = manifest;
+    return manifest;
+  } catch (error) {
+    return {};
+  }
+}
+
+/**
+ * Fetch and cache the Chainsaw manifest
+ */
+async function getChainsawManifest(): Promise<Record<string, CategoryManifest>> {
+  if (cachedChainsawManifest) {
+    return cachedChainsawManifest;
+  }
+
+  try {
+    const response = await fetch('/chainsaw-rules/manifest.json');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch manifest: ${response.statusText}`);
+    }
+    const manifest = await response.json();
+    cachedChainsawManifest = manifest;
     return manifest;
   } catch (error) {
     return {};
@@ -99,7 +121,7 @@ export async function getAvailablePlatformsWithCounts(): Promise<PlatformInfo[]>
 
   // Load Windows SIGMA rule count from manifest
   try {
-    const manifest = await getManifest();
+    const manifest = await getSigmaManifest();
     const totalSigmaRules = Object.values(manifest).reduce((sum, cat) => sum + cat.ruleCount, 0);
     const windowsPlatform = platforms.find(p => p.id === 'windows');
     if (windowsPlatform) {
@@ -109,11 +131,16 @@ export async function getAvailablePlatformsWithCounts(): Promise<PlatformInfo[]>
     console.warn('Failed to load SIGMA rule count:', error);
   }
 
-  // Load Chainsaw rule count (from bundled metadata or static count)
-  // For now, we'll use a static count since Chainsaw rules aren't bundled yet
-  const chainsawPlatform = platforms.find(p => p.id === 'chainsaw');
-  if (chainsawPlatform) {
-    chainsawPlatform.ruleCount = 74; // Static count until TAU engine is implemented
+  // Load Chainsaw rule count from manifest
+  try {
+    const manifest = await getChainsawManifest();
+    const totalChainsawRules = Object.values(manifest).reduce((sum, cat) => sum + cat.ruleCount, 0);
+    const chainsawPlatform = platforms.find(p => p.id === 'chainsaw');
+    if (chainsawPlatform) {
+      chainsawPlatform.ruleCount = totalChainsawRules;
+    }
+  } catch (error) {
+    console.warn('Failed to load Chainsaw rule count:', error);
   }
 
   return platforms;
@@ -140,7 +167,7 @@ export async function autoLoadRules(
 
   try {
     // Load manifest to know which categories exist
-    const manifest = await getManifest();
+    const manifest = await getSigmaManifest();
 
     // Determine which categories to load
     let categoriesToLoad = Object.keys(manifest);
@@ -211,7 +238,7 @@ export async function autoLoadRules(
  * Get list of available categories for Windows platform
  */
 export async function getAvailableCategories(_platform: SigmaPlatform = 'windows'): Promise<string[]> {
-  const manifest = await getManifest();
+  const manifest = await getSigmaManifest();
   return Object.keys(manifest);
 }
 

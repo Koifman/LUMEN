@@ -130,6 +130,8 @@
 
 .platform-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .platform-content h3 {
@@ -144,6 +146,7 @@
   color: #71717a;
   margin: 0 0 0.75rem;
   line-height: 1.4;
+  min-height: 2.8em; /* Ensures 2 lines of text height for alignment */
 }
 
 .rule-count {
