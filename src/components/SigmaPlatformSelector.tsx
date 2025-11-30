@@ -1,5 +1,5 @@
-import { useMemo, useState, useCallback } from 'react';
-import { getAvailablePlatforms, SigmaPlatform } from '../lib/sigma/utils/autoLoadRules';
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { getAvailablePlatformsWithCounts, SigmaPlatform, PlatformInfo } from '../lib/sigma/utils/autoLoadRules';
 import SigmaRuleLoader from './SigmaRuleLoader';
 import './SigmaPlatformSelector.css';
 
@@ -18,12 +18,17 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
   const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<SigmaPlatform | null>(null);
   const [showRuleLoader, setShowRuleLoader] = useState(false);
-  const platforms = getAvailablePlatforms();
+  const [platforms, setPlatforms] = useState<PlatformInfo[]>([]);
   const categories = useMemo(() => {
     if (!selectedPlatform) return [];
     return PLATFORM_CATEGORIES[selectedPlatform] || [];
   }, [selectedPlatform]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Load platforms with dynamic rule counts
+  useEffect(() => {
+    getAvailablePlatformsWithCounts().then(setPlatforms);
+  }, []);
 
   const handlePlatformClick = (platformId: SigmaPlatform) => {
     setSelectedPlatform(platformId);

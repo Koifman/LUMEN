@@ -72,23 +72,51 @@ async function getManifest(): Promise<Record<string, CategoryManifest>> {
  * Only returns Windows platform for EVTX compatibility
  */
 export function getAvailablePlatforms(): PlatformInfo[] {
-  // Return static info - actual counts will be loaded from manifest at runtime
+  // Return static info - rule counts will be dynamically loaded
   return [
     {
       id: 'windows',
       name: 'Windows - Official SIGMA',
       description: 'Windows Event Logs (EVTX), Sysmon, PowerShell, Security events',
       icon: '',
-      ruleCount: 2349 // Total from build script
+      ruleCount: 0 // Will be dynamically loaded from manifest
     },
     {
       id: 'chainsaw',
       name: 'Chainsaw',
       description: 'Windows-focused threat hunting rules (TAU format)',
       icon: '',
-      ruleCount: 74 // TAU format rules from Chainsaw submodule
+      ruleCount: 0 // Will be dynamically loaded from chainsaw rules
     }
   ];
+}
+
+/**
+ * Get available platforms with dynamically loaded rule counts
+ */
+export async function getAvailablePlatformsWithCounts(): Promise<PlatformInfo[]> {
+  const platforms = getAvailablePlatforms();
+
+  // Load Windows SIGMA rule count from manifest
+  try {
+    const manifest = await getManifest();
+    const totalSigmaRules = Object.values(manifest).reduce((sum, cat) => sum + cat.ruleCount, 0);
+    const windowsPlatform = platforms.find(p => p.id === 'windows');
+    if (windowsPlatform) {
+      windowsPlatform.ruleCount = totalSigmaRules;
+    }
+  } catch (error) {
+    console.warn('Failed to load SIGMA rule count:', error);
+  }
+
+  // Load Chainsaw rule count (from bundled metadata or static count)
+  // For now, we'll use a static count since Chainsaw rules aren't bundled yet
+  const chainsawPlatform = platforms.find(p => p.id === 'chainsaw');
+  if (chainsawPlatform) {
+    chainsawPlatform.ruleCount = 74; // Static count until TAU engine is implemented
+  }
+
+  return platforms;
 }
 
 /**
