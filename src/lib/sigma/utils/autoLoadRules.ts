@@ -84,9 +84,9 @@ export function getAvailablePlatforms(): PlatformInfo[] {
     {
       id: 'chainsaw',
       name: 'Chainsaw',
-      description: 'Windows-focused threat hunting rules (TAU format - coming soon)',
+      description: 'Windows-focused threat hunting rules (TAU format)',
       icon: '',
-      ruleCount: 0 // Will be available when TAU engine is implemented
+      ruleCount: 74 // TAU format rules from Chainsaw submodule
     }
   ];
 }

@@ -11,7 +11,7 @@ interface SigmaPlatformSelectorProps {
 
 const PLATFORM_CATEGORIES: Record<SigmaPlatform, string[]> = {
   windows: ['process_creation', 'image_load', 'network_connection', 'registry', 'file_event', 'pipe_created', 'powershell', 'process_access', 'dns_query', 'security', 'driver_load'],
-  chainsaw: [] // Will be populated when TAU engine is implemented
+  chainsaw: ['account_tampering', 'antivirus', 'applocker', 'credential_access', 'defense_evasion', 'indicator_removal', 'lateral_movement', 'log_tampering', 'login_attacks', 'microsoft_rasvpn_events', 'microsoft_rds_events', 'persistence', 'powershell', 'rdp_attacks', 'service_installation', 'service_tampering']
 };
 
 export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }: SigmaPlatformSelectorProps) {
