@@ -153,18 +153,43 @@ export default function SigmaRuleLoader({ engine, onRulesLoaded }: SigmaRuleLoad
 
       <div className="loader-info">
         <p>
-          Load SIGMA rules in YAML format. You can select multiple files or an entire folder.
+          Load custom SIGMA rules in YAML format. You can select multiple files or an entire folder.
         </p>
         <p className="hint">
-          💡 Tip: Download Windows SIGMA rules from{' '}
-          <a
-            href="https://github.com/SigmaHQ/sigma/tree/master/rules/windows"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            SigmaHQ repository
-          </a>
+          💡 <strong>Popular rule sources:</strong>
         </p>
+        <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <li>
+            <a
+              href="https://github.com/WithSecureLabs/chainsaw/tree/master/sigma_rules"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Chainsaw SIGMA rules
+            </a>{' '}
+            - Windows-focused threat hunting rules
+          </li>
+          <li>
+            <a
+              href="https://github.com/SigmaHQ/sigma/tree/master/rules/windows"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SigmaHQ repository
+            </a>{' '}
+            - Official community-driven rules
+          </li>
+          <li>
+            <a
+              href="https://socprime.com/threat-detection-marketplace/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SOC Prime
+            </a>{' '}
+            - Commercial and free detection content
+          </li>
+        </ul>
       </div>
     </div>
   );
