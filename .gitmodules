@@ -1,6 +1,3 @@
-[submodule "src/sigma-master"]
-	path = src/sigma-master
-	url = https://github.com/SigmaHQ/sigma.git
 [submodule "samples/EVTX-ATTACK-SAMPLES"]
 	path = samples/EVTX-ATTACK-SAMPLES
 	url = https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES.git
