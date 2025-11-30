@@ -13,6 +13,8 @@ export interface LogEntry {
   source?: string;
   computer?: string;
   message?: string;
+  // Multi-file support
+  sourceFile?: string;
 }
 
 export interface ParsedData {
@@ -20,6 +22,7 @@ export interface ParsedData {
   format: 'evtx' | 'unknown';
   totalLines: number;
   parsedLines: number;
+  sourceFiles?: string[];
 }
 
 export type LLMProvider =

@@ -7,6 +7,8 @@ import {
   processEventsOptimized,
   OptimizedMatchStats
 } from '../lib/sigma/engine/optimizedMatcher';
+import FileFilter from './FileFilter';
+import FileBreakdownStats from './FileBreakdownStats';
 import './SigmaDetections.css';
 
 // ============================================================================
@@ -66,15 +68,17 @@ interface SigmaDetectionsProps {
   sigmaEngine?: SigmaEngine;
   onMatchesUpdate?: (matches: Map<string, SigmaRuleMatch[]>) => void;
   cachedMatches?: Map<string, SigmaRuleMatch[]>;
+  sourceFiles?: string[];
 }
 
-export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, cachedMatches }: SigmaDetectionsProps) {
+export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, cachedMatches, sourceFiles }: SigmaDetectionsProps) {
   const [expandedRule, setExpandedRule] = useState<string | null>(null);
   const [matches, setMatches] = useState<Map<string, SigmaRuleMatch[]>>(cachedMatches || new Map());
   const [isLoading, setIsLoading] = useState(!(cachedMatches && cachedMatches.size > 0));
   const [progress, setProgress] = useState({ processed: 0, total: 0, matchesFound: 0 });
   const [optimizationStats, setOptimizationStats] = useState<OptimizedMatchStats | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   // Virtual scrolling state
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
@@ -199,6 +203,16 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
       return (severityOrder[severityA] || 2) - (severityOrder[severityB] || 2);
     });
   }, [matches]);
+
+  // Filter matches by selected file
+  const filteredMatches = useMemo(() => {
+    if (!selectedFile) return sortedMatches;
+
+    return sortedMatches.map(([ruleId, ruleMatches]) => {
+      const filtered = ruleMatches.filter(match => match.event.sourceFile === selectedFile);
+      return [ruleId, filtered] as [string, SigmaRuleMatch[]];
+    }).filter(([, ruleMatches]) => ruleMatches.length > 0);
+  }, [sortedMatches, selectedFile]);
 
   // Window scroll handler for infinite scroll
   // Using window scroll since parent containers control scrolling
@@ -347,14 +361,27 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
         )}
       </div>
 
+      {/* File Breakdown Stats */}
+      <FileBreakdownStats
+        entries={events}
+        sourceFiles={sourceFiles}
+      />
+
+      {/* File Filter */}
+      <FileFilter
+        sourceFiles={sourceFiles}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
+      />
+
       {/* Detection Cards - Virtual Scrolling */}
-      {!isLoading && sortedMatches.length > 0 && (
+      {!isLoading && filteredMatches.length > 0 && (
         <div
           className="sigma-matches"
           ref={containerRef}
           onScroll={handleScroll}
         >
-          {sortedMatches.slice(0, visibleCount).map(([ruleId, ruleMatches]) => {
+          {filteredMatches.slice(0, visibleCount).map(([ruleId, ruleMatches]) => {
             if (ruleMatches.length === 0) return null;
 
             const rule = ruleMatches[0].rule;

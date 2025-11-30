@@ -68,6 +68,7 @@ export default function Dashboard({
             sigmaEngine={sigmaEngine}
             onMatchesUpdate={handleAnalysisComplete}
             cachedMatches={cachedMatches}
+            sourceFiles={data.sourceFiles}
           />
         </div>
       )}

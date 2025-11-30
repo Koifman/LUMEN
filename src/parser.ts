@@ -18,7 +18,8 @@ function detectFormat(sample: string): 'evtx' | 'unknown' {
  */
 function parseEVTXXML(
   content: string,
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void,
+  filename?: string
 ): LogEntry[] {
   const entries: LogEntry[] = [];
 
@@ -150,6 +151,7 @@ function parseEVTXXML(
         source,
         computer,
         message,
+        sourceFile: filename,
       });
 
       // Report progress every 100 events to avoid too many updates
@@ -189,7 +191,8 @@ function getLevelName(level: string): string {
  */
 export function parseLogFile(
   content: string,
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void,
+  filename?: string
 ): ParsedData {
   const format = detectFormat(content);
   let entries: LogEntry[] = [];
@@ -197,11 +200,11 @@ export function parseLogFile(
 
   if (format === 'evtx') {
     // Parse XML-formatted EVTX
-    entries = parseEVTXXML(content, onProgress);
+    entries = parseEVTXXML(content, onProgress, filename);
     totalLines = entries.length;
   } else {
     // Unknown format - try to parse as EVTX anyway
-    entries = parseEVTXXML(content, onProgress);
+    entries = parseEVTXXML(content, onProgress, filename);
     totalLines = entries.length;
   }
 
@@ -210,5 +213,6 @@ export function parseLogFile(
     format: entries.length > 0 ? 'evtx' : 'unknown',
     totalLines,
     parsedLines: entries.length,
+    sourceFiles: filename ? [filename] : undefined,
   };
 }
