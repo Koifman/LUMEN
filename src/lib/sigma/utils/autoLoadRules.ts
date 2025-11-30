@@ -78,14 +78,14 @@ export function getAvailablePlatforms(): PlatformInfo[] {
       id: 'windows',
       name: 'Windows - Official SIGMA',
       description: 'Windows Event Logs (EVTX), Sysmon, PowerShell, Security events',
-      icon: '💠',
+      icon: '',
       ruleCount: 2349 // Total from build script
     },
     {
       id: 'chainsaw',
       name: 'Chainsaw',
       description: 'Windows-focused threat hunting rules (TAU format - coming soon)',
-      icon: '🪚',
+      icon: '',
       ruleCount: 0 // Will be available when TAU engine is implemented
     }
   ];
