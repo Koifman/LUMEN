@@ -5,11 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run sync:sigma && npm run bundle:sigma && npm run bundle:chainsaw && tsc && vite build",
+    "build": "npm run sync:sigma && npm run bundle:sigma && tsc && vite build",
     "preview": "vite preview",
     "sync:sigma": "node scripts/sync-sigma.js",
-    "bundle:sigma": "node scripts/bundle-sigma-rules.js",
-    "bundle:chainsaw": "node scripts/bundle-chainsaw-rules.js"
+    "bundle:sigma": "node scripts/bundle-sigma-rules.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",

@@ -4,6 +4,3 @@
 [submodule "sigma-windows"]
 	path = src/sigma-master
 	url = https://github.com/SigmaHQ/sigma.git
-[submodule "chainsaw-rules"]
-	path = src/chainsaw-rules
-	url = https://github.com/WithSecureLabs/chainsaw.git

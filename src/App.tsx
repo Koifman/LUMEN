@@ -85,10 +85,6 @@ function App() {
     setSelectedPlatform(platform);
     setRulesLoading(true);
 
-    // Immediately switch to analysis view - rules will load in background
-    setAnalysisMode('sigma');
-    setCurrentView('analysis');
-
     // Clear any previously loaded rules
     sigmaEngine.clearRules();
     setSigmaMatches(new Map());
@@ -105,6 +101,10 @@ function App() {
 
     setRulesLoading(false);
     setRuleLoadProgress(null);
+
+    // Switch to analysis view only after rules are loaded
+    setAnalysisMode('sigma');
+    setCurrentView('analysis');
   };
 
   const handleBackToSelector = () => {
@@ -374,24 +374,7 @@ function SigmaAnalysisView({
   onMatchesUpdate,
   cachedMatches
 }: SigmaAnalysisViewProps) {
-  if (rulesLoading) {
-    const progressMessage = ruleLoadProgress
-      ? `Loading ${platform} detection rules... ${ruleLoadProgress.loaded} / ${ruleLoadProgress.total} files (${Math.round((ruleLoadProgress.loaded / ruleLoadProgress.total) * 100)}%)`
-      : `Loading ${platform} detection rules...`;
-
-    return (
-      <div className="dashboard">
-        <div className="dashboard-header">
-          <div>
-            <h1>SIGMA Detection</h1>
-            <p className="tagline">Starting analysis...</p>
-          </div>
-        </div>
-        <LoadingState message={progressMessage} size="large" fullPage />
-      </div>
-    );
-  }
-
+  // Skip loading screen - rules load in background
   return (
     <Dashboard
       data={data}

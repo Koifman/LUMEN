@@ -74,10 +74,19 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
   const [isLoading, setIsLoading] = useState(!(cachedMatches && cachedMatches.size > 0));
   const [progress, setProgress] = useState({ processed: 0, total: 0, matchesFound: 0 });
   const [optimizationStats, setOptimizationStats] = useState<OptimizedMatchStats | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   // Virtual scrolling state
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-clear copied tooltip after 2 seconds
+  useEffect(() => {
+    if (copiedItem) {
+      const timer = setTimeout(() => setCopiedItem(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copiedItem]);
 
   // Use ref for callback to avoid re-triggering effect
   const onMatchesUpdateRef = useRef(onMatchesUpdate);
@@ -357,18 +366,89 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
               <div
                 key={ruleId}
                 className={`sigma-match ${level}`}
-                style={{ borderLeftColor: getSeverityColor(level) }}
+                style={{ borderLeftColor: getSeverityColor(level), cursor: 'pointer' }}
+                onClick={() => toggleExpand(ruleId)}
               >
-                <div className="match-header" onClick={() => toggleExpand(ruleId)}>
+                <div className="match-header">
                   <div className="match-title">
                     <span className="severity-icon">{getSeverityIcon(level)}</span>
-                    <h3>{rule.title}</h3>
+                    <div style={{ position: 'relative' }}>
+                      <h3
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(rule.title);
+                          setCopiedItem(`title-${ruleId}`);
+                        }}
+                        style={{ cursor: 'pointer !important', userSelect: 'none', margin: 0 }}
+                        title="Click to copy title"
+                      >
+                        {rule.title}
+                      </h3>
+                      {copiedItem === `title-${ruleId}` && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '0',
+                          left: '100%',
+                          marginLeft: '0.75rem',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          zIndex: 1000,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                        }}>
+                          Copied
+                        </span>
+                      )}
+                      <div style={{
+                        fontSize: '0.85rem',
+                        color: '#ffffff',
+                        marginTop: '0.25rem',
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        position: 'relative'
+                      }}>
+                        <span style={{ fontWeight: '600', color: '#e5e7eb' }}>Rule ID: </span>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(rule.id);
+                            setCopiedItem(`id-${ruleId}`);
+                          }}
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                          title="Click to copy rule ID"
+                        >
+                          {rule.id}
+                        </span>
+                        {copiedItem === `id-${ruleId}` && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '0',
+                            left: '100%',
+                            marginLeft: '0.5rem',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            zIndex: 1000,
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                          }}>
+                            Copied
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className="match-meta">
                     <span className="match-count">
                       {ruleMatches.length} {ruleMatches.length === 1 ? 'event' : 'events'}
                     </span>
-                    <button className="expand-btn">
+                    <button className="expand-btn" onClick={() => toggleExpand(ruleId)}>
                       {isExpanded ? '▼' : '▶'}
                     </button>
                   </div>

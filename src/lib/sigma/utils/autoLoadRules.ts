@@ -11,7 +11,7 @@ import { SigmaEngine } from '../SigmaEngine';
  * Supported SIGMA rule platforms
  * Only Windows is supported for EVTX file analysis
  */
-export type SigmaPlatform = 'windows' | 'chainsaw';
+export type SigmaPlatform = 'windows';
 
 /**
  * Platform metadata for UI display
@@ -45,7 +45,6 @@ interface RuleFile {
  * Cached manifests to avoid repeated fetches
  */
 let cachedSigmaManifest: Record<string, CategoryManifest> | null = null;
-let cachedChainsawManifest: Record<string, CategoryManifest> | null = null;
 
 /**
  * Fetch and cache the SIGMA manifest
@@ -68,26 +67,6 @@ async function getSigmaManifest(): Promise<Record<string, CategoryManifest>> {
   }
 }
 
-/**
- * Fetch and cache the Chainsaw manifest
- */
-async function getChainsawManifest(): Promise<Record<string, CategoryManifest>> {
-  if (cachedChainsawManifest) {
-    return cachedChainsawManifest;
-  }
-
-  try {
-    const response = await fetch('/chainsaw-rules/manifest.json');
-    if (!response.ok) {
-      throw new Error(`Failed to fetch manifest: ${response.statusText}`);
-    }
-    const manifest = await response.json();
-    cachedChainsawManifest = manifest;
-    return manifest;
-  } catch (error) {
-    return {};
-  }
-}
 
 /**
  * Get available platforms with rule counts
@@ -102,13 +81,6 @@ export function getAvailablePlatforms(): PlatformInfo[] {
       description: 'Windows Event Logs (EVTX), Sysmon, PowerShell, Security events',
       icon: '',
       ruleCount: 0 // Will be dynamically loaded from manifest
-    },
-    {
-      id: 'chainsaw',
-      name: 'Chainsaw',
-      description: 'Windows-focused threat hunting rules (TAU format)',
-      icon: '',
-      ruleCount: 0 // Will be dynamically loaded from chainsaw rules
     }
   ];
 }
@@ -129,18 +101,6 @@ export async function getAvailablePlatformsWithCounts(): Promise<PlatformInfo[]>
     }
   } catch (error) {
     console.warn('Failed to load SIGMA rule count:', error);
-  }
-
-  // Load Chainsaw rule count from manifest
-  try {
-    const manifest = await getChainsawManifest();
-    const totalChainsawRules = Object.values(manifest).reduce((sum, cat) => sum + cat.ruleCount, 0);
-    const chainsawPlatform = platforms.find(p => p.id === 'chainsaw');
-    if (chainsawPlatform) {
-      chainsawPlatform.ruleCount = totalChainsawRules;
-    }
-  } catch (error) {
-    console.warn('Failed to load Chainsaw rule count:', error);
   }
 
   return platforms;

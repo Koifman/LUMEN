@@ -6,7 +6,11 @@
 }
 
 .loading-state-fullpage {
-  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+  padding: 4rem 2rem;
 }
 
 .loading-content {

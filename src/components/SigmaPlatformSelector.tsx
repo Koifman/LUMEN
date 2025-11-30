@@ -9,30 +9,40 @@ interface SigmaPlatformSelectorProps {
   sigmaEngine?: any;
 }
 
-const PLATFORM_CATEGORIES: Record<SigmaPlatform, string[]> = {
-  windows: ['process_creation', 'image_load', 'network_connection', 'registry', 'file_event', 'pipe_created', 'powershell', 'process_access', 'dns_query', 'security', 'driver_load'],
-  chainsaw: ['account_tampering', 'antivirus', 'applocker', 'credential_access', 'defense_evasion', 'indicator_removal', 'lateral_movement', 'log_tampering', 'login_attacks', 'microsoft_rasvpn_events', 'microsoft_rds_events', 'persistence', 'powershell', 'rdp_attacks', 'service_installation', 'service_tampering']
-};
-
 export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }: SigmaPlatformSelectorProps) {
   const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<SigmaPlatform | null>(null);
   const [showRuleLoader, setShowRuleLoader] = useState(false);
   const [platforms, setPlatforms] = useState<PlatformInfo[]>([]);
-  const categories = useMemo(() => {
-    if (!selectedPlatform) return [];
-    return PLATFORM_CATEGORIES[selectedPlatform] || [];
-  }, [selectedPlatform]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Load platforms with dynamic rule counts
+  // Load platforms with dynamic rule counts and categories
   useEffect(() => {
-    getAvailablePlatformsWithCounts().then(setPlatforms);
+    const loadData = async () => {
+      // Load platforms
+      const platformsData = await getAvailablePlatformsWithCounts();
+      setPlatforms(platformsData);
+
+      // Load categories from manifest
+      try {
+        const response = await fetch('/sigma-rules/manifest.json');
+        if (response.ok) {
+          const manifest = await response.json();
+          const categories = Object.keys(manifest).sort();
+          setAvailableCategories(categories);
+        }
+      } catch (error) {
+        console.warn('Failed to load categories:', error);
+      }
+    };
+    loadData();
   }, []);
 
   const handlePlatformClick = (platformId: SigmaPlatform) => {
     setSelectedPlatform(platformId);
-    setSelectedCategories(PLATFORM_CATEGORIES[platformId] || []);
+    // Select all categories by default
+    setSelectedCategories(availableCategories);
   };
 
   const toggleCategory = (cat: string) => {
@@ -117,7 +127,7 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
         ))}
       </div>
 
-      {selectedPlatform && categories.length > 0 && (
+      {selectedPlatform && availableCategories.length > 0 && (
         <div className="platform-filters">
           <div className="filters-header">
             <div>
@@ -126,12 +136,12 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
               <p className="filter-sub">Reducing categories trims load time and noise.</p>
             </div>
             <div className="filter-actions">
-              <button onClick={() => setSelectedCategories(PLATFORM_CATEGORIES[selectedPlatform] || [])}>Select all</button>
+              <button onClick={() => setSelectedCategories(availableCategories)}>Select all</button>
               <button onClick={() => setSelectedCategories([])}>Clear</button>
             </div>
           </div>
           <div className="filter-grid">
-            {categories.map(cat => (
+            {availableCategories.map(cat => (
               <label key={cat} className="filter-chip">
                 <input
                   type="checkbox"
@@ -143,7 +153,7 @@ export default function SigmaPlatformSelector({ onSelect, onBack, sigmaEngine }:
             ))}
           </div>
           <div className="filter-footer">
-            <span>{selectedCategories.length} of {categories.length} categories selected</span>
+            <span>{selectedCategories.length} of {availableCategories.length} categories selected</span>
             <button className="load-button" onClick={handleLoad} disabled={selectedCategories.length === 0}>
               Load rules
             </button>
