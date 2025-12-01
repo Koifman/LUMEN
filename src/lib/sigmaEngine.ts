@@ -295,6 +295,11 @@ function getEventField(event: LogEntry, fieldPath: string): any {
     return (event as any)[mappedField];
   }
 
+  // Structured EventData map (preferred over XML parsing)
+  if (event.eventData && fieldPath in event.eventData) {
+    return event.eventData[fieldPath];
+  }
+
   // Parse EventData fields from rawLine XML
   if (event.rawLine && event.rawLine.includes('<')) {
     try {

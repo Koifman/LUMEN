@@ -38,13 +38,17 @@ const COLORS = ['#60a5fa', '#a78bfa', '#f472b6', '#fbbf24', '#4ade80', '#fb923c'
  * Extract process information from EVTX event rawLine
  */
 function extractProcessInfo(entry: LogEntry): ProcessInfo | null {
-  if (!entry.rawLine) return null;
+  if (!entry.rawLine && !entry.eventData) return null;
 
   // Only process Sysmon Event ID 1 (Process Creation) or Security Event ID 4688
   const eventId = entry.eventId;
   if (eventId !== 1 && eventId !== 4688) return null;
 
   const extractField = (fieldName: string): string => {
+    if (entry.eventData && entry.eventData[fieldName]) {
+      return entry.eventData[fieldName];
+    }
+
     // Try Data Name format: <Data Name="Image">value</Data>
     const dataRegex = new RegExp(`<Data Name="${fieldName}"[^>]*>([^<]*)</Data>`, 'i');
     const dataMatch = entry.rawLine.match(dataRegex);

@@ -13,6 +13,8 @@ export interface LogEntry {
   source?: string;
   computer?: string;
   message?: string;
+  // Parsed EventData fields (name -> value) to avoid re-parsing raw XML
+  eventData?: Record<string, string>;
   // Multi-file support
   sourceFile?: string;
 }

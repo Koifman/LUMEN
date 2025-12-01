@@ -580,13 +580,17 @@ function ChainTimeline({ chains, formatDuration }: ChainTimelineProps) {
   };
 
   const getProcessName = (event: LogEntry): string | null => {
-    if (!event.rawLine) return null;
-    const match = event.rawLine.match(/<Data Name="Image">([^<]+)<\/Data>/i);
-    if (match) {
-      const parts = match[1].split(/[\\\/]/);
-      return parts[parts.length - 1];
-    }
-    return null;
+    const image =
+      (event.eventData && event.eventData.Image) ||
+      (() => {
+        if (!event.rawLine) return null;
+        const match = event.rawLine.match(/<Data Name="Image">([^<]+)<\/Data>/i);
+        return match ? match[1] : null;
+      })();
+
+    if (!image) return null;
+    const parts = image.split(/[\\\/]/);
+    return parts[parts.length - 1];
   };
 
   const formatTime = (date: Date | null | undefined) => {
@@ -704,6 +708,9 @@ interface ProcessNode {
 
 function ProcessTree({ chain, displayEvents, overflowCount, getProcessName, formatTime, matchesEvent }: ProcessTreeProps) {
   const getField = (event: LogEntry, fieldName: string): string | null => {
+    if (event.eventData && event.eventData[fieldName]) {
+      return event.eventData[fieldName];
+    }
     if (!event.rawLine) return null;
     const match = event.rawLine.match(new RegExp(`<Data Name="${fieldName}">([^<]*)</Data>`, 'i'));
     return match ? match[1] : null;

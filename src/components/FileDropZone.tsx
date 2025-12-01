@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { isBinaryEVTX } from '../evtxBinaryParser';
-import { parseBinaryEVTXWithWasm } from '../lib/evtxWasmParser';
+import { parseBinaryEVTXToEntries } from '../lib/evtxWasmParser';
 import { parseLogFile } from '../parser';
 import { ParsedData } from '../types';
 import { generateSampleData } from '../lib/sampleDataGenerator';
@@ -35,9 +35,10 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
       setProcessingStatus('Checking file format...');
 
       try {
-        // Check file size and enforce 500MB limit
+        // Check file size and enforce limit
+        // Increased from 500MB to 1000MB (1GB) due to memory optimization (direct WASM→LogEntry conversion)
         const fileSizeMB = file.size / 1024 / 1024;
-        const MAX_FILE_SIZE_MB = 500;
+        const MAX_FILE_SIZE_MB = 1000;
 
         if (fileSizeMB > MAX_FILE_SIZE_MB) {
           alert(
@@ -52,26 +53,45 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
         // Check if this is a binary EVTX file
         const isBinary = await isBinaryEVTX(file);
 
-        let xmlContent: string;
-
         if (isBinary) {
-          // For binary EVTX, we can't use chunked reading as the WASM parser needs the complete file
-          // Just show a message that we're parsing
+          // Memory-optimized path: Direct WASM → LogEntry conversion (no intermediate XML)
           setProcessingStatus(`Parsing binary EVTX file (${fileSizeMB.toFixed(1)} MB)...`);
-          xmlContent = await parseBinaryEVTXWithWasm(file, (wasmChunksProcessed, wasmTotalChunks, recordsProcessed) => {
-            setChunksProcessed(wasmChunksProcessed);
-            setTotalChunks(wasmTotalChunks);
-            setProcessingStatus(`Parsed ${recordsProcessed.toLocaleString()} records`);
-          });
+
+          const entries = await parseBinaryEVTXToEntries(
+            file,
+            (processed, total) => {
+              setEventsProcessed(processed);
+              setTotalEvents(total || 0);
+              const totalDisplay = total ? total.toLocaleString() : 'unknown';
+              const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
+              setProcessingStatus(`${processed.toLocaleString()} / ${totalDisplay} records${percentage}`);
+            },
+            file.name
+          );
+
+          // Create ParsedData directly from entries
+          const parsedData: ParsedData = {
+            entries,
+            format: 'evtx',
+            totalLines: entries.length,
+            parsedLines: entries.length,
+            sourceFiles: [file.name],
+          };
+
+          setProcessingStatus('Loading analysis selector...');
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          onFileLoaded(parsedData, file.name);
+          setIsProcessing(false);
         } else {
-          // Read XML file in chunks to avoid memory issues with large files
+          // XML path: Read file in chunks and parse with DOMParser
           const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
           const fileChunks = Math.ceil(file.size / CHUNK_SIZE);
           setTotalChunks(fileChunks);
 
           setProcessingStatus(`Reading file (${fileSizeMB.toFixed(1)} MB)...`);
 
-          xmlContent = await new Promise<string>((resolve, reject) => {
+          const xmlContent = await new Promise<string>((resolve, reject) => {
             const chunks: string[] = [];
             let offset = 0;
             let loadedChunks = 0;
@@ -106,24 +126,24 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
 
             readNextChunk();
           });
+
+          // Parse the XML content with progress tracking
+          setProcessingStatus('Parsing events from XML...');
+          const parsedData = parseLogFile(xmlContent, (processed, total) => {
+            setEventsProcessed(processed);
+            setTotalEvents(total);
+            setProcessingStatus(`Parsing events: ${processed.toLocaleString()} / ${total.toLocaleString()}`);
+          }, file.name);
+
+          // Call parent with parsed data
+          setProcessingStatus('Loading analysis selector...');
+
+          // Use setTimeout to yield to browser and update UI before heavy state update
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          onFileLoaded(parsedData, file.name);
+          setIsProcessing(false);
         }
-
-        // Parse the XML content with progress tracking
-        setProcessingStatus('Parsing events from XML...');
-        const parsedData = parseLogFile(xmlContent, (processed, total) => {
-          setEventsProcessed(processed);
-          setTotalEvents(total);
-          setProcessingStatus(`Parsing events: ${processed.toLocaleString()} / ${total.toLocaleString()}`);
-        }, file.name);
-
-        // Call parent with parsed data
-        setProcessingStatus('Loading analysis selector...');
-
-        // Use setTimeout to yield to browser and update UI before heavy state update
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        onFileLoaded(parsedData, file.name);
-        setIsProcessing(false);
       } catch (error) {
         alert(`Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
         setIsProcessing(false);
@@ -162,7 +182,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
 
           // Check file size
           const fileSizeMB = file.size / 1024 / 1024;
-          const MAX_FILE_SIZE_MB = 500;
+          const MAX_FILE_SIZE_MB = 1000;
 
           if (fileSizeMB > MAX_FILE_SIZE_MB) {
             alert(
@@ -175,24 +195,42 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
 
           // Check if binary EVTX
           const isBinary = await isBinaryEVTX(file);
-          let xmlContent: string;
 
           if (isBinary) {
+            // Memory-optimized path: Direct WASM → LogEntry conversion
             setProcessingStatus(`[${i + 1}/${files.length}] Parsing binary EVTX: ${file.name}`);
-            xmlContent = await parseBinaryEVTXWithWasm(file, (wasmChunksProcessed, wasmTotalChunks, recordsProcessed) => {
-              setChunksProcessed(wasmChunksProcessed);
-              setTotalChunks(wasmTotalChunks);
-              setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${recordsProcessed.toLocaleString()} records`);
-            });
+
+            const entries = await parseBinaryEVTXToEntries(
+              file,
+              (processed, total) => {
+                setEventsProcessed(processed);
+                setTotalEvents(total || 0);
+                const totalDisplay = total ? total.toLocaleString() : 'unknown';
+                const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
+                setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${totalDisplay} records${percentage}`);
+              },
+              file.name
+            );
+
+            const parsedData: ParsedData = {
+              entries,
+              format: 'evtx',
+              totalLines: entries.length,
+              parsedLines: entries.length,
+              sourceFiles: [file.name],
+            };
+
+            allParsedData.push(parsedData);
+            filenames.push(file.name);
           } else {
-            // Read XML file
+            // XML path: Read and parse with DOMParser
             const CHUNK_SIZE = 10 * 1024 * 1024;
             const fileChunks = Math.ceil(file.size / CHUNK_SIZE);
             setTotalChunks(fileChunks);
 
             setProcessingStatus(`[${i + 1}/${files.length}] Reading ${file.name}...`);
 
-            xmlContent = await new Promise<string>((resolve, reject) => {
+            const xmlContent = await new Promise<string>((resolve, reject) => {
               const chunks: string[] = [];
               let offset = 0;
               let loadedChunks = 0;
@@ -220,18 +258,18 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
 
               readNextChunk();
             });
+
+            // Parse XML
+            setProcessingStatus(`[${i + 1}/${files.length}] Parsing events from ${file.name}...`);
+            const parsedData = parseLogFile(xmlContent, (processed, total) => {
+              setEventsProcessed(processed);
+              setTotalEvents(total);
+              setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`);
+            }, file.name);
+
+            allParsedData.push(parsedData);
+            filenames.push(file.name);
           }
-
-          // Parse XML
-          setProcessingStatus(`[${i + 1}/${files.length}] Parsing events from ${file.name}...`);
-          const parsedData = parseLogFile(xmlContent, (processed, total) => {
-            setEventsProcessed(processed);
-            setTotalEvents(total);
-            setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`);
-          }, file.name);
-
-          allParsedData.push(parsedData);
-          filenames.push(file.name);
 
           // Reset progress for next file
           setEventsProcessed(0);
@@ -289,21 +327,27 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
         const blob = await response.blob();
         const file = new File([blob], filename, { type: 'application/octet-stream' });
 
-        // Process the file
+        // Process the file using memory-optimized direct conversion
         setProcessingStatus('Parsing sample EVTX file...');
-        const xmlContent = await parseBinaryEVTXWithWasm(file, (wasmChunksProcessed, wasmTotalChunks, recordsProcessed) => {
-          setChunksProcessed(wasmChunksProcessed);
-          setTotalChunks(wasmTotalChunks);
-          setProcessingStatus(`Parsed ${recordsProcessed.toLocaleString()} records`);
-        });
+        const entries = await parseBinaryEVTXToEntries(
+          file,
+          (processed, total) => {
+            setEventsProcessed(processed);
+            setTotalEvents(total || 0);
+            const totalDisplay = total ? total.toLocaleString() : 'unknown';
+            const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
+            setProcessingStatus(`${processed.toLocaleString()} / ${totalDisplay} records${percentage}`);
+          },
+          filename
+        );
 
-        // Parse the XML content with progress tracking
-        setProcessingStatus('Parsing events from XML...');
-        const parsedData = parseLogFile(xmlContent, (processed, total) => {
-          setEventsProcessed(processed);
-          setTotalEvents(total);
-          setProcessingStatus(`Parsing events: ${processed.toLocaleString()} / ${total.toLocaleString()}`);
-        });
+        const parsedData: ParsedData = {
+          entries,
+          format: 'evtx',
+          totalLines: entries.length,
+          parsedLines: entries.length,
+          sourceFiles: [filename],
+        };
 
         setProcessingStatus('Loading analysis selector...');
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -376,7 +420,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
             <h2>Drop your EVTX/XML file(s) here</h2>
             <p>Windows Event Log files (.evtx) - binary or XML export</p>
             <p className="info-note">💡 You can select multiple files at once</p>
-            <p className="info-note">💡 File size limit: 500MB per file</p>
+            <p className="info-note">💡 File size limit: 1GB per file</p>
         <p className="privacy-note">🔒 100% client-side processing - your data never leaves your computer (except when using AI analysis)</p>
 
             <label className="file-input-label">
@@ -428,11 +472,6 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
                 {totalChunks > 0 && (
                   <div className="chunk-progress">
                     {chunksProcessed} / {totalChunks} chunks
-                  </div>
-                )}
-                {totalEvents > 0 && (
-                  <div className="processing-events">
-                    {eventsProcessed.toLocaleString()} / {totalEvents.toLocaleString()} events
                   </div>
                 )}
               </div>

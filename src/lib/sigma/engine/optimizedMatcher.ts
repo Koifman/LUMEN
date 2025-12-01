@@ -479,6 +479,11 @@ function quickRejectCheck(event: LogEntry, filters: QuickFilter[], fieldCache: M
  * Fast field extraction for quick checks (no full XML parsing)
  */
 function extractFieldForQuickCheck(event: LogEntry, field: string): string {
+  // Structured EventData (preferred)
+  if (event.eventData && event.eventData[field]) {
+    return event.eventData[field];
+  }
+
   // First check if it's in the rawLine using regex (faster than DOM parsing)
   const rawLine = event.rawLine;
   if (!rawLine) return '';

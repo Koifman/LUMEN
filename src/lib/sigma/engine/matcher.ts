@@ -62,35 +62,52 @@ export function preIndexEventFields(event: any): IndexedFields {
   if (event.computer !== undefined) indexed.Computer = event.computer;
   if (event.source !== undefined) indexed.Provider = event.source;
 
-  // Parse EventData XML once if present
-  const xml = event.rawLine;
-  if (xml && typeof xml === 'string' && xml.includes('<EventData')) {
-    // Parse once and cache values for all Data elements (case-insensitive)
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(xml, 'text/xml');
-      const parserError = doc.querySelector('parsererror');
-      if (!parserError) {
-        const eventData = doc.querySelector('EventData');
-        if (eventData) {
-          const dataElements = eventData.querySelectorAll('Data');
-          for (const dataElem of Array.from(dataElements)) {
-            const name = dataElem.getAttribute('Name');
-            if (!name) continue;
-            const value = (dataElem.textContent || '').trim();
-            const keyLower = name.toLowerCase();
-            // Skip Sysmon-only metadata when handling Security 4688 events
-            if (isSecurity4688 && SYS_MON_METADATA_FIELDS.has(keyLower)) {
-              continue;
-            }
-            if (HIGH_FREQUENCY_FIELDS.some(f => f.toLowerCase() === keyLower)) {
-              indexed[name as keyof IndexedFields] = value;
+  // Prefer structured eventData if available
+  if (event.eventData && typeof event.eventData === 'object') {
+    for (const [name, value] of Object.entries(event.eventData)) {
+      const keyLower = name.toLowerCase();
+      if (isSecurity4688 && SYS_MON_METADATA_FIELDS.has(keyLower)) continue;
+      if (HIGH_FREQUENCY_FIELDS.some(f => f.toLowerCase() === keyLower)) {
+        const val =
+          typeof value === 'string' || typeof value === 'number'
+            ? value
+            : value != null
+              ? String(value)
+              : undefined;
+        if (val !== undefined) {
+          indexed[name as keyof IndexedFields] = val;
+        }
+      }
+    }
+  } else {
+    // Parse EventData XML once if present as a fallback
+    const xml = event.rawLine;
+    if (xml && typeof xml === 'string' && xml.includes('<EventData')) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xml, 'text/xml');
+        const parserError = doc.querySelector('parsererror');
+        if (!parserError) {
+          const eventData = doc.querySelector('EventData');
+          if (eventData) {
+            const dataElements = eventData.querySelectorAll('Data');
+            for (const dataElem of Array.from(dataElements)) {
+              const name = dataElem.getAttribute('Name');
+              if (!name) continue;
+              const value = (dataElem.textContent || '').trim();
+              const keyLower = name.toLowerCase();
+              if (isSecurity4688 && SYS_MON_METADATA_FIELDS.has(keyLower)) {
+                continue;
+              }
+              if (HIGH_FREQUENCY_FIELDS.some(f => f.toLowerCase() === keyLower)) {
+                indexed[name as keyof IndexedFields] = value;
+              }
             }
           }
         }
+      } catch (e) {
+        // If parsing fails, fall back to no pre-indexing for this event
       }
-    } catch (e) {
-      // If parsing fails, fall back to no pre-indexing for this event
     }
   }
 
@@ -345,6 +362,11 @@ function extractField(event: any, fieldPath: string): any {
     return event[fieldPath];
   }
 
+  // Structured EventData map (preferred, no XML parsing)
+  if (event.eventData && fieldPath in event.eventData) {
+    return event.eventData[fieldPath];
+  }
+
   // Check common field mappings to LogEntry fields
   const fieldMappings: Record<string, string> = {
     'Provider': 'source',
@@ -414,6 +436,11 @@ function extractField(event: any, fieldPath: string): any {
  * Extract field from EventData XML section with caching
  */
 function extractFromEventData(event: any, fieldName: string): string | undefined {
+  // Use structured eventData first
+  if (event.eventData && fieldName in event.eventData) {
+    return event.eventData[fieldName];
+  }
+
   // Check cache first
   let fieldCache = eventDataCache.get(event);
   if (fieldCache) {

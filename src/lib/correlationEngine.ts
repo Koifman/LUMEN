@@ -71,8 +71,14 @@ const EVENT_TYPES = {
   FILE_DELETE_LOGGED: 26,
 };
 
-// Extract field from rawLine using regex
-function extractField(rawLine: string, fieldName: string): string | null {
+// Extract field from structured eventData (preferred) or rawLine
+function extractField(entry: LogEntry, fieldName: string): string | null {
+  if (entry.eventData && entry.eventData[fieldName]) {
+    return entry.eventData[fieldName];
+  }
+
+  const rawLine = entry.rawLine || '';
+
   // Try XML format: <Data Name="FieldName">value</Data>
   const xmlMatch = rawLine.match(new RegExp(`<Data[^>]*Name=["']${fieldName}["'][^>]*>([^<]*)</Data>`, 'i'));
   if (xmlMatch) return xmlMatch[1];
@@ -86,29 +92,29 @@ function extractField(rawLine: string, fieldName: string): string | null {
 
 // Extract process GUID from event
 function getProcessGuid(entry: LogEntry): string | null {
-  return extractField(entry.rawLine, 'ProcessGuid') ||
-         extractField(entry.rawLine, 'SourceProcessGuid') ||
-         extractField(entry.rawLine, 'NewProcessId') || // Security 4688
-         extractField(entry.rawLine, 'ProcessId');      // Security 4688 parent
+  return extractField(entry, 'ProcessGuid') ||
+         extractField(entry, 'SourceProcessGuid') ||
+         extractField(entry, 'NewProcessId') || // Security 4688
+         extractField(entry, 'ProcessId');      // Security 4688 parent
 }
 
 // Extract parent process GUID
 function getParentProcessGuid(entry: LogEntry): string | null {
-  return extractField(entry.rawLine, 'ParentProcessGuid') ||
-         extractField(entry.rawLine, 'ParentProcessId') ||
-         extractField(entry.rawLine, 'ProcessId'); // Security 4688 parent
+  return extractField(entry, 'ParentProcessGuid') ||
+         extractField(entry, 'ParentProcessId') ||
+         extractField(entry, 'ProcessId'); // Security 4688 parent
 }
 
 // Extract target process GUID (for process access events)
 function getTargetProcessGuid(entry: LogEntry): string | null {
-  return extractField(entry.rawLine, 'TargetProcessGuid');
+  return extractField(entry, 'TargetProcessGuid');
 }
 
 // Extract process image name
 function getProcessImage(entry: LogEntry): string | null {
-  const image = extractField(entry.rawLine, 'Image') ||
-                extractField(entry.rawLine, 'SourceImage') ||
-                extractField(entry.rawLine, 'NewProcessName'); // Security 4688
+  const image = extractField(entry, 'Image') ||
+                extractField(entry, 'SourceImage') ||
+                extractField(entry, 'NewProcessName'); // Security 4688
   if (!image) return null;
   // Get just the filename
   const parts = image.split(/[\\\/]/);

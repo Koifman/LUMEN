@@ -36,7 +36,7 @@ npm run build
 ```
 
 ## Workflow
-1) **Upload logs**: Drag/drop single or multiple EVTX files, or load samples. File size limit: 500MB per file. Supports both binary EVTX and XML exports. Multi-file uploads are automatically merged for cross-file analysis with color-coded visualization and file filtering.
+1) **Upload logs**: Drag/drop single or multiple EVTX files, or load samples. File size limit: 1GB per file. Supports both binary EVTX and XML exports. Multi-file uploads are automatically merged for cross-file analysis with color-coded visualization and file filtering.
 2) **Select analysis**: SIGMA Detection, Event Correlation, Dashboards, Timeline, IOC Extraction, Raw Logs, AI Analysis.
 3) **Load SIGMA**: Choose platform and (optionally) categories; rules load dynamically and cache for the session. Upload custom SIGMA rules for organization-specific detections.
 4) **Investigate**:

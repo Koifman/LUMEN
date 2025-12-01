@@ -84,6 +84,7 @@ function parseEVTXXML(
 
       // Extract EventData
       const eventData = event.querySelector('EventData');
+      const eventDataMap: Record<string, string> = {};
 
       // Try to extract IP address from Data elements
       let ip = 'N/A';
@@ -91,8 +92,13 @@ function parseEVTXXML(
       dataElements.forEach((data) => {
         const name = data.getAttribute('Name');
         const value = data.textContent || '';
+        if (!name) return;
+
+        // Capture for downstream structured access
+        eventDataMap[name] = value;
+
         // Look for common IP field names
-        if (name && (name.includes('IpAddress') || name.includes('IPAddress') || name.includes('SourceAddress') || name.includes('ClientIP'))) {
+        if (name.includes('IpAddress') || name.includes('IPAddress') || name.includes('SourceAddress') || name.includes('ClientIP')) {
           ip = value;
         }
       });
@@ -100,15 +106,12 @@ function parseEVTXXML(
       // Extract message or data content
       let message = '';
       if (eventData) {
-        const dataNodes = eventData.querySelectorAll('Data');
         const dataTexts: string[] = [];
-        dataNodes.forEach((node) => {
-          const name = node.getAttribute('Name');
-          const value = node.textContent || '';
-          if (name && value) {
+        for (const [name, value] of Object.entries(eventDataMap)) {
+          if (value) {
             dataTexts.push(`${name}=${value}`);
           }
-        });
+        }
         message = dataTexts.join(', ');
       }
 
@@ -151,6 +154,7 @@ function parseEVTXXML(
         source,
         computer,
         message,
+        eventData: Object.keys(eventDataMap).length ? eventDataMap : undefined,
         sourceFile: filename,
       });
 
