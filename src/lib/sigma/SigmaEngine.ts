@@ -7,7 +7,7 @@
 import { SigmaRule, CompiledSigmaRule, SigmaRuleMatch, SigmaEngineStats, SigmaConfig, SigmaLogSource } from './types';
 import { parseSigmaRule, parseSigmaRules, validateSigmaRule } from './parser/yamlParser';
 import { compileRule } from './engine/compiler';
-import { matchAllEvents, matchRule } from './engine/matcher';
+import { matchAllEventsOptimized, matchRule } from './engine/matcher';
 import { isWindowsCompatibleRule } from './engine/optimizedMatcher';
 
 /**
@@ -143,12 +143,13 @@ export class SigmaEngine {
 
   /**
    * Match events against all loaded rules
+   * Uses optimized field indexing for better performance on large datasets
    */
   matchAll(events: any[]): Map<string, SigmaRuleMatch[]> {
     const startTime = performance.now();
 
     const compiledRules = Array.from(this.rules.values());
-    const matches = matchAllEvents(events, compiledRules);
+    const matches = matchAllEventsOptimized(events, compiledRules);
 
     const endTime = performance.now();
     const processingTime = endTime - startTime;
