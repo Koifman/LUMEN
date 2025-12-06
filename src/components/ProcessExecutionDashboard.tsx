@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -165,11 +165,27 @@ function isExcludedPath(image: string, customExcludedPaths: string[]): boolean {
 export default function ProcessExecutionDashboard({ entries, onBack }: ProcessExecutionDashboardProps) {
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null);
   const [typosquattingThreshold, setTyposquattingThreshold] = useState<number>(2);
-  const [excludedPaths, setExcludedPaths] = useState<string[]>(DEFAULT_EXCLUDED_PATHS);
-  const [excludedProcesses, setExcludedProcesses] = useState<string[]>(DEFAULT_EXCLUDED_PROCESSES);
+  const [excludedPaths, setExcludedPaths] = useState<string[]>(() => {
+    const saved = localStorage.getItem('processAnalysisExcludedPaths');
+    return saved ? JSON.parse(saved) : DEFAULT_EXCLUDED_PATHS;
+  });
+  const [excludedProcesses, setExcludedProcesses] = useState<string[]>(() => {
+    const saved = localStorage.getItem('processAnalysisExcludedProcesses');
+    return saved ? JSON.parse(saved) : DEFAULT_EXCLUDED_PROCESSES;
+  });
   const [showExclusionEditor, setShowExclusionEditor] = useState<boolean>(false);
   const [newExcludedPath, setNewExcludedPath] = useState<string>('');
   const [newExcludedProcess, setNewExcludedProcess] = useState<string>('');
+
+  // Persist excluded paths to localStorage
+  useEffect(() => {
+    localStorage.setItem('processAnalysisExcludedPaths', JSON.stringify(excludedPaths));
+  }, [excludedPaths]);
+
+  // Persist excluded processes to localStorage
+  useEffect(() => {
+    localStorage.setItem('processAnalysisExcludedProcesses', JSON.stringify(excludedProcesses));
+  }, [excludedProcesses]);
 
   // Extract all process creation events
   const processEvents = useMemo(() => {
