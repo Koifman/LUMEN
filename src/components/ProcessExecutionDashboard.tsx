@@ -12,6 +12,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { LogEntry } from '../types';
+import { LEGITIMATE_PROCESSES } from '../lib/legitimateProcesses';
+import { findClosestMatch } from '../lib/levenshtein';
 import './ProcessExecutionDashboard.css';
 
 interface ProcessExecutionDashboardProps {
@@ -126,8 +128,48 @@ function isSuspiciousPath(image: string): boolean {
   return suspiciousPatterns.some(pattern => lowerImage.includes(pattern));
 }
 
+/**
+ * Default excluded paths for typosquatting analysis
+ */
+const DEFAULT_EXCLUDED_PATHS = [
+  '\\windows\\system32\\',
+  '\\windows\\syswow64\\',
+  '\\program files\\splunk\\',
+  '\\program files\\splunkuniversalforwarder\\',
+  '\\program files\\git\\',
+  'c:\\program files\\wsl\\',
+  'c:\\program files\\bravesoftware\\',
+  '\\appdata\\local\\programs\\microsoft vs code\\',
+  '\\appdata\\local\\githubdesktop\\',
+  '\\appdata\\local\\discord\\',
+  '\\appdata\\local\\fluxsoftware\\',
+  '\\appdata\\roaming\\zoom\\',
+  '\\program files\\nodejs\\',
+  '\\microsoft\\windows defender\\',
+];
+
+/**
+ * Default excluded legitimate processes - these processes will be excluded from the comparison list
+ * (i.e., if a process is similar to these, it won't be flagged)
+ */
+const DEFAULT_EXCLUDED_PROCESSES: string[] = [...LEGITIMATE_PROCESSES];
+
+/**
+ * Check if a process path should be excluded from typosquatting analysis
+ */
+function isExcludedPath(image: string, customExcludedPaths: string[]): boolean {
+  const lowerImage = image.toLowerCase();
+  return customExcludedPaths.some(pattern => lowerImage.includes(pattern.toLowerCase()));
+}
+
 export default function ProcessExecutionDashboard({ entries, onBack }: ProcessExecutionDashboardProps) {
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null);
+  const [typosquattingThreshold, setTyposquattingThreshold] = useState<number>(2);
+  const [excludedPaths, setExcludedPaths] = useState<string[]>(DEFAULT_EXCLUDED_PATHS);
+  const [excludedProcesses, setExcludedProcesses] = useState<string[]>(DEFAULT_EXCLUDED_PROCESSES);
+  const [showExclusionEditor, setShowExclusionEditor] = useState<boolean>(false);
+  const [newExcludedPath, setNewExcludedPath] = useState<string>('');
+  const [newExcludedProcess, setNewExcludedProcess] = useState<string>('');
 
   // Extract all process creation events
   const processEvents = useMemo(() => {
@@ -192,12 +234,98 @@ export default function ProcessExecutionDashboard({ entries, onBack }: ProcessEx
       .slice(0, 15);
   }, [processEvents]);
 
-  // Suspicious processes
+  // Suspicious processes - grouped by process name and parent
+  interface SuspiciousMatch {
+    processName: string;
+    fullPath: string;
+    parentProcess: string;
+    occurrences: ProcessInfo[];
+  }
+
   const suspiciousProcesses = useMemo(() => {
-    return processEvents
-      .filter(proc => isSuspiciousPath(proc.image))
-      .slice(0, 20);
+    const matches = new Map<string, SuspiciousMatch>();
+
+    for (const proc of processEvents) {
+      if (!isSuspiciousPath(proc.image)) {
+        continue;
+      }
+
+      const processName = getExeName(proc.image);
+      const parentProcess = getExeName(proc.parentImage) || 'Unknown';
+      const key = `${processName}|${parentProcess}`;
+
+      if (matches.has(key)) {
+        matches.get(key)!.occurrences.push(proc);
+      } else {
+        matches.set(key, {
+          processName,
+          fullPath: proc.image,
+          parentProcess,
+          occurrences: [proc],
+        });
+      }
+    }
+
+    return Array.from(matches.values())
+      .sort((a, b) => b.occurrences.length - a.occurrences.length);
   }, [processEvents]);
+
+  // Typosquatting detection
+  interface TyposquattingMatch {
+    processName: string;
+    fullPath: string;
+    legitimateMatch: string;
+    distance: number;
+    occurrences: ProcessInfo[];
+  }
+
+  const typosquattingMatches = useMemo(() => {
+    const matches = new Map<string, TyposquattingMatch>();
+    const checkedProcesses = new Set<string>(); // Track already-checked process names to avoid redundant checks
+
+    // Use only the processes in excludedProcesses as the comparison list
+    const filteredLegitimateProcesses = excludedProcesses;
+
+    for (const proc of processEvents) {
+      // Early exit: skip excluded paths (System32, Splunk, Git, VS Code, etc.)
+      if (isExcludedPath(proc.image, excludedPaths)) {
+        continue;
+      }
+
+      const processName = getExeName(proc.image).toLowerCase();
+
+      // If we've already found this process name, just add to occurrences
+      if (matches.has(processName)) {
+        matches.get(processName)!.occurrences.push(proc);
+        continue;
+      }
+
+      // If we've already checked this process name and found no match, skip
+      if (checkedProcesses.has(processName)) {
+        continue;
+      }
+
+      // Mark as checked
+      checkedProcesses.add(processName);
+
+      // Check for typosquatting against filtered legitimate processes
+      const match = findClosestMatch(processName, filteredLegitimateProcesses, typosquattingThreshold);
+
+      if (match) {
+        matches.set(processName, {
+          processName,
+          fullPath: proc.image,
+          legitimateMatch: match.match,
+          distance: match.distance,
+          occurrences: [proc],
+        });
+      }
+    }
+
+    // Convert to array and sort by distance (closer matches are more suspicious)
+    return Array.from(matches.values())
+      .sort((a, b) => a.distance - b.distance);
+  }, [processEvents, typosquattingThreshold, excludedPaths, excludedProcesses]);
 
   // User activity
   const userActivity = useMemo(() => {
@@ -278,6 +406,10 @@ export default function ProcessExecutionDashboard({ entries, onBack }: ProcessEx
         <div className="stat-card warning">
           <span className="stat-value">{suspiciousProcesses.length}</span>
           <span className="stat-label">Suspicious Locations</span>
+        </div>
+        <div className="stat-card warning">
+          <span className="stat-value">{typosquattingMatches.length}</span>
+          <span className="stat-label">Typosquatting Suspects</span>
         </div>
       </div>
 
@@ -383,6 +515,170 @@ export default function ProcessExecutionDashboard({ entries, onBack }: ProcessEx
         </div>
       </div>
 
+      {/* Typosquatting Detection Section */}
+      {typosquattingMatches.length > 0 && (
+        <div className="suspicious-section typosquatting-section">
+          <div className="section-header-with-controls">
+            <div>
+              <h3>🔍 Potential Masquerading Detected</h3>
+              <p className="section-desc">
+                Process names similar to legitimate Windows processes (excluding {excludedPaths.length} paths, comparing against {excludedProcesses.length} processes)
+              </p>
+            </div>
+            <div className="threshold-control">
+              <label htmlFor="threshold-slider">
+                Distance Threshold: <strong>{typosquattingThreshold}</strong>
+              </label>
+              <input
+                id="threshold-slider"
+                type="range"
+                min="1"
+                max="5"
+                value={typosquattingThreshold}
+                onChange={(e) => setTyposquattingThreshold(parseInt(e.target.value))}
+                className="threshold-slider"
+              />
+              <span className="threshold-hint">
+                (Lower = stricter matching)
+              </span>
+              <button
+                className="exclusion-editor-btn"
+                onClick={() => setShowExclusionEditor(!showExclusionEditor)}
+              >
+                {showExclusionEditor ? 'Hide' : 'Edit'} Exclusions
+              </button>
+            </div>
+          </div>
+
+          {/* Exclusion Editor */}
+          {showExclusionEditor && (
+            <div className="exclusion-editor">
+              <div className="exclusion-section">
+                <h4>Excluded Paths ({excludedPaths.length})</h4>
+                <div className="exclusion-add">
+                  <input
+                    type="text"
+                    placeholder="e.g., \Program Files\MyApp\"
+                    value={newExcludedPath}
+                    onChange={(e) => setNewExcludedPath(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newExcludedPath.trim()) {
+                        setExcludedPaths([...excludedPaths, newExcludedPath.trim()]);
+                        setNewExcludedPath('');
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (newExcludedPath.trim()) {
+                        setExcludedPaths([...excludedPaths, newExcludedPath.trim()]);
+                        setNewExcludedPath('');
+                      }
+                    }}
+                  >
+                    Add Path
+                  </button>
+                </div>
+                <div className="exclusion-list">
+                  {excludedPaths.map((path, idx) => (
+                    <div key={idx} className="exclusion-item">
+                      <span>{path}</span>
+                      <button
+                        className="remove-btn"
+                        onClick={() => setExcludedPaths(excludedPaths.filter((_, i) => i !== idx))}
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="exclusion-section">
+                <h4>Legitimate Processes to Compare Against ({excludedProcesses.length})</h4>
+                <div className="exclusion-add">
+                  <input
+                    type="text"
+                    placeholder="e.g., svchost.exe"
+                    value={newExcludedProcess}
+                    onChange={(e) => setNewExcludedProcess(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newExcludedProcess.trim()) {
+                        setExcludedProcesses([...excludedProcesses, newExcludedProcess.trim().toLowerCase()]);
+                        setNewExcludedProcess('');
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (newExcludedProcess.trim()) {
+                        setExcludedProcesses([...excludedProcesses, newExcludedProcess.trim().toLowerCase()]);
+                        setNewExcludedProcess('');
+                      }
+                    }}
+                  >
+                    Add Process
+                  </button>
+                </div>
+                <div className="exclusion-list">
+                  {excludedProcesses.map((proc, idx) => (
+                    <div key={idx} className="exclusion-item">
+                      <span>{proc}</span>
+                      <button
+                        className="remove-btn"
+                        onClick={() => setExcludedProcesses(excludedProcesses.filter((_, i) => i !== idx))}
+                        title="Remove from comparison list"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="exclusion-actions">
+                <button
+                  className="reset-btn"
+                  onClick={() => {
+                    setExcludedPaths(DEFAULT_EXCLUDED_PATHS);
+                    setExcludedProcesses(DEFAULT_EXCLUDED_PROCESSES);
+                  }}
+                >
+                  Reset to Defaults
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="typosquatting-list">
+            {typosquattingMatches.map((match, idx) => (
+              <div key={idx} className="typosquatting-item">
+                <div className="typosquatting-header">
+                  <span className="typosquatting-name">{match.processName}</span>
+                  <span className="typosquatting-badge">
+                    Distance: {match.distance} from "{match.legitimateMatch}"
+                  </span>
+                </div>
+                <div className="typosquatting-path">{match.fullPath}</div>
+                <div className="typosquatting-meta">
+                  <span>Executions: {match.occurrences.length}</span>
+                  <span>First seen: {match.occurrences[0].timestamp.toLocaleString()}</span>
+                  {match.occurrences[0].user && (
+                    <span>User: {match.occurrences[0].user}</span>
+                  )}
+                </div>
+                {match.occurrences[0].commandLine && (
+                  <div className="typosquatting-cmdline" title={match.occurrences[0].commandLine}>
+                    <strong>Command:</strong> {match.occurrences[0].commandLine.substring(0, 120)}
+                    {match.occurrences[0].commandLine.length > 120 ? '...' : ''}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Suspicious Processes Section */}
       {suspiciousProcesses.length > 0 && (
         <div className="suspicious-section">
@@ -391,25 +687,26 @@ export default function ProcessExecutionDashboard({ entries, onBack }: ProcessEx
             Processes executed from temporary, download, or public folders
           </p>
           <div className="suspicious-list">
-            {suspiciousProcesses.map((proc, idx) => (
+            {suspiciousProcesses.map((match, idx) => (
               <div key={idx} className="suspicious-item">
                 <div className="suspicious-header">
-                  <span className="suspicious-name">{getExeName(proc.image)}</span>
-                  <span className="suspicious-time">
-                    {proc.timestamp.toLocaleString()}
-                  </span>
+                  <span className="suspicious-name">{match.processName}</span>
                 </div>
-                <div className="suspicious-path">{proc.image}</div>
-                {proc.commandLine && (
-                  <div className="suspicious-cmdline" title={proc.commandLine}>
-                    {proc.commandLine.substring(0, 150)}
-                    {proc.commandLine.length > 150 ? '...' : ''}
+                <div className="suspicious-path">{match.fullPath}</div>
+                <div className="suspicious-meta">
+                  <span>Executions: {match.occurrences.length}</span>
+                  <span>First seen: {match.occurrences[0].timestamp.toLocaleString()}</span>
+                  <span>Parent: {match.parentProcess}</span>
+                  {match.occurrences[0].user && (
+                    <span>User: {match.occurrences[0].user}</span>
+                  )}
+                </div>
+                {match.occurrences[0].commandLine && (
+                  <div className="suspicious-cmdline" title={match.occurrences[0].commandLine}>
+                    <strong>Command:</strong> {match.occurrences[0].commandLine.substring(0, 120)}
+                    {match.occurrences[0].commandLine.length > 120 ? '...' : ''}
                   </div>
                 )}
-                <div className="suspicious-meta">
-                  <span>User: {proc.user || 'N/A'}</span>
-                  <span>Parent: {getExeName(proc.parentImage) || 'N/A'}</span>
-                </div>
               </div>
             ))}
           </div>

@@ -13,6 +13,8 @@ LUMEN is a browser-based Windows Event Log analyzer that stays entirely on your 
 - **Correlation & story view**: Chains related events, with a narrative "Storyline" tab for fast triage and a detailed chain view with process context.
 - **IOC extraction + VT integration**: Pull IPs/domains/hashes/paths/URLs/registry keys; optional VirusTotal lookups with API key input.
 - **Dashboards & timeline**: High-level dashboards, process analysis, and a SIGMA-aware timeline for sequence analysis.
+- **Process masquerading detection**: Levenshtein distance-based detection of process names similar to legitimate Windows processes with customizable threshold and exclusion lists.
+- **Suspicious location analysis**: Automatic flagging of processes executed from temporary, download, or public folders with grouping by process name and parent.
 - **Sessions & exports**: Save/restore sessions locally (no server), export reports, and use built-in sample data for demos.
 - **Privacy by design**: 100% client-side (WASM + JS); no telemetry, no uploads.
 
@@ -39,6 +41,7 @@ git submodule update --init --recursive
    - Correlation: Analyzes events with SIGMA matches (+ context events); chain list + Storyline summary for fast triage.
    - IOC Extraction: categorized indicators, VT lookup buttons, export IOCs.
    - Dashboards/Timeline/Process views: aggregated and time-sequenced perspectives with file breakdown statistics.
+   - Process Execution Analysis: Detects masquerading attempts using Levenshtein distance matching (customizable threshold 1-5) against 166+ legitimate Windows processes; flags processes from suspicious locations (temp folders, downloads, etc.); supports path/process exclusions with editable legitimate process list.
    - AI Analysis: Optional AI-powered analysis using Anthropic Claude, OpenAI, Google Gemini, or Ollama.
 5) **Export or save**: Generate reports or save a session locally to resume later.
 
