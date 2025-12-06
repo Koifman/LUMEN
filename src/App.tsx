@@ -381,28 +381,21 @@ function App() {
                 <div className="feature-icon">🎭</div>
                 <div className="feature-content">
                   <strong>Process Masquerading Detection</strong>
-                  <p>Levenshtein distance-based detection identifies processes mimicking legitimate Windows executables with customizable thresholds (1-5 edits)</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">⚠️</div>
-                <div className="feature-content">
-                  <strong>Suspicious Location Analysis</strong>
-                  <p>Automatically flags processes running from temp folders, downloads, and public directories — grouped by process and parent for faster triage</p>
+                  <p>Levenshtein distance-based detection identifies processes mimicking legitimate Windows executables with customizable thresholds</p>
                 </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">📁</div>
                 <div className="feature-content">
                   <strong>Multi-File Upload Support</strong>
-                  <p>Upload multiple EVTX files simultaneously with merged analysis, color-coded visualization, and file-based filtering for comprehensive investigations</p>
+                  <p>Upload multiple EVTX files simultaneously with merged analysis, color-coded visualization, and file-based filtering</p>
                 </div>
               </div>
               <div className="feature-item">
                 <div className="feature-icon">⚡</div>
                 <div className="feature-content">
                   <strong>Field Indexing Optimization</strong>
-                  <p>Dramatically faster SIGMA matching with intelligent field indexing — large event sets now process in seconds instead of minutes</p>
+                  <p>Dramatically faster SIGMA matching with intelligent field indexing — large event sets now process in seconds</p>
                 </div>
               </div>
             </div>
