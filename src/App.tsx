@@ -39,6 +39,12 @@ function App() {
     return !hasSeenAnnouncement;
   });
 
+  const [showFeaturesAnnouncement, setShowFeaturesAnnouncement] = useState(() => {
+    // Show new features popup only once
+    const hasSeenFeatures = localStorage.getItem('hasSeenFeaturesV1');
+    return !hasSeenFeatures;
+  });
+
   // Create SIGMA engine instance (persists across renders)
   const sigmaEngine = useMemo(() => {
     return createSigmaEngine({
@@ -356,6 +362,54 @@ function App() {
               setShowOpenSourceAnnouncement(false);
               localStorage.setItem('hasSeenOpenSourceAnnouncement', 'true');
             }}>Got it!</button>
+          </div>
+        </div>
+      )}
+
+      {showFeaturesAnnouncement && (
+        <div className="feedback-modal-backdrop" onClick={() => {
+          setShowFeaturesAnnouncement(false);
+          localStorage.setItem('hasSeenFeaturesV1', 'true');
+        }}>
+          <div className="feedback-modal features-announcement" onClick={e => e.stopPropagation()}>
+            <h3>🚀 New Features in LUMEN</h3>
+            <p>
+              We've added powerful new capabilities to help you detect threats more effectively!
+            </p>
+            <div className="features-list">
+              <div className="feature-item">
+                <div className="feature-icon">🎭</div>
+                <div className="feature-content">
+                  <strong>Process Masquerading Detection</strong>
+                  <p>Levenshtein distance-based detection identifies processes mimicking legitimate Windows executables with customizable thresholds (1-5 edits)</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">⚠️</div>
+                <div className="feature-content">
+                  <strong>Suspicious Location Analysis</strong>
+                  <p>Automatically flags processes running from temp folders, downloads, and public directories — grouped by process and parent for faster triage</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">📁</div>
+                <div className="feature-content">
+                  <strong>Multi-File Upload Support</strong>
+                  <p>Upload multiple EVTX files simultaneously with merged analysis, color-coded visualization, and file-based filtering for comprehensive investigations</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">⚡</div>
+                <div className="feature-content">
+                  <strong>Field Indexing Optimization</strong>
+                  <p>Dramatically faster SIGMA matching with intelligent field indexing — large event sets now process in seconds instead of minutes</p>
+                </div>
+              </div>
+            </div>
+            <button className="feedback-close features-close-btn" onClick={() => {
+              setShowFeaturesAnnouncement(false);
+              localStorage.setItem('hasSeenFeaturesV1', 'true');
+            }}>Awesome, let's try them!</button>
           </div>
         </div>
       )}
