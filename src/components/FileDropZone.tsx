@@ -5,6 +5,13 @@ import { parseLogFile } from '../parser';
 import { ParsedData } from '../types';
 import { generateSampleData } from '../lib/sampleDataGenerator';
 import SampleSelector from './SampleSelector';
+import { FileProcessingResultsModal } from './FileProcessingResultsModal';
+import {
+  FileProcessingResult,
+  FileProcessingError,
+  ErrorType,
+  MultiFileProcessingResults,
+} from '../types/fileProcessing';
 import './FileDropZone.css';
 
 interface FileDropZoneProps {
@@ -22,6 +29,8 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
   const [showSampleSelector, setShowSampleSelector] = useState(false);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [totalFiles, setTotalFiles] = useState(0);
+  const [showProcessingResults, setShowProcessingResults] = useState(false);
+  const [processingResults, setProcessingResults] = useState<MultiFileProcessingResults | null>(null);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -144,11 +153,124 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
     [onFileLoaded]
   );
 
+  // Helper function to categorize WASM parser errors
+  const categorizeWasmError = (error: unknown, filename: string): FileProcessingError => {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // No records parsed
+    if (errorMsg.includes('No records were successfully parsed')) {
+      return {
+        type: ErrorType.NO_RECORDS_FOUND,
+        message: 'No valid event records could be extracted from this file',
+        technicalDetails: errorMsg,
+        failurePoint: 'parsing',
+      };
+    }
+
+    // WASM initialization error
+    if (errorMsg.includes('WASM') || errorMsg.includes('WebAssembly')) {
+      return {
+        type: ErrorType.WASM_INITIALIZATION_ERROR,
+        message: 'Failed to initialize the binary parser',
+        technicalDetails: errorMsg,
+        failurePoint: 'parsing',
+      };
+    }
+
+    // Invalid format
+    if (errorMsg.includes('Invalid EVTX') || errorMsg.includes('ElfFile')) {
+      return {
+        type: ErrorType.INVALID_FORMAT,
+        message: 'File does not appear to be a valid EVTX file',
+        technicalDetails: errorMsg,
+        failurePoint: 'validation',
+      };
+    }
+
+    // BigInt errors (indicate corrupted timestamps)
+    if (errorMsg.includes("can't be represented as a JavaScript number")) {
+      return {
+        type: ErrorType.CORRUPTED_FILE,
+        message: 'File contains corrupted timestamp data',
+        technicalDetails: 'BigInt conversion error in event timestamps',
+        failurePoint: 'parsing',
+      };
+    }
+
+    // Generic WASM parsing error
+    return {
+      type: ErrorType.WASM_PARSING_ERROR,
+      message: 'Failed to parse binary EVTX file',
+      technicalDetails: errorMsg,
+      failurePoint: 'parsing',
+    };
+  };
+
+  // Helper function to categorize XML parser errors
+  const categorizeXmlError = (error: unknown, filename: string): FileProcessingError => {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // File read errors
+    if (errorMsg.includes('Error reading')) {
+      return {
+        type: ErrorType.FILE_READ_ERROR,
+        message: 'Failed to read file contents',
+        technicalDetails: errorMsg,
+        failurePoint: 'reading',
+      };
+    }
+
+    // XML parsing errors
+    if (errorMsg.includes('XML parsing') || errorMsg.includes('parsererror')) {
+      return {
+        type: ErrorType.XML_PARSING_ERROR,
+        message: 'XML file is malformed or too large to parse',
+        technicalDetails: errorMsg,
+        failurePoint: 'parsing',
+      };
+    }
+
+    // Too large
+    if (errorMsg.includes('too large')) {
+      return {
+        type: ErrorType.FILE_TOO_LARGE,
+        message: 'XML file is too large for browser to parse',
+        technicalDetails: errorMsg,
+        failurePoint: 'parsing',
+      };
+    }
+
+    return {
+      type: ErrorType.XML_PARSING_ERROR,
+      message: 'Failed to parse XML file',
+      technicalDetails: errorMsg,
+      failurePoint: 'parsing',
+    };
+  };
+
+  // Helper function to aggregate file processing results
+  const aggregateResults = (results: FileProcessingResult[]): MultiFileProcessingResults => {
+    const successfulFiles = results.filter(r => r.status === 'success');
+    const failedFiles = results.filter(r => r.status === 'error');
+    const partialFiles = results.filter(r => r.status === 'partial');
+
+    const totalRecordsParsed = successfulFiles.reduce((sum, r) => sum + (r.recordCount || 0), 0);
+
+    return {
+      totalFiles: results.length,
+      successfulFiles,
+      failedFiles,
+      partialFiles,
+      totalRecordsParsed,
+      totalErrors: failedFiles.length + partialFiles.length,
+    };
+  };
+
   const handleFiles = useCallback(
     async (files: FileList) => {
       if (files.length === 0) return;
 
-      // If only one file, use the original handler
+      // If only one file, use the original handler (maintains backward compatibility)
       if (files.length === 1) {
         handleFile(files[0]);
         return;
@@ -160,26 +282,33 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
       setChunksProcessed(0);
       setTotalChunks(0);
 
-      try {
-        const allParsedData: ParsedData[] = [];
-        const filenames: string[] = [];
+      const results: FileProcessingResult[] = [];
 
-        // Process each file sequentially
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          setCurrentFileIndex(i + 1);
-          setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}`);
+      // Process each file sequentially with per-file error handling
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setCurrentFileIndex(i + 1);
+        setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}`);
 
-          // Check file size
+        const result: FileProcessingResult = {
+          filename: file.name,
+          fileSize: file.size,
+          status: 'error', // Will be updated on success
+        };
+
+        try {
+          // Validate file size
           const fileSizeMB = file.size / 1024 / 1024;
           const MAX_FILE_SIZE_MB = 1000;
 
           if (fileSizeMB > MAX_FILE_SIZE_MB) {
-            alert(
-              `File ${file.name} is too large: ${fileSizeMB.toFixed(1)} MB\n\n` +
-              `Maximum file size: ${MAX_FILE_SIZE_MB} MB\n\n` +
-              `Skipping this file.`
-            );
+            result.error = {
+              type: ErrorType.FILE_TOO_LARGE,
+              message: `File exceeds maximum size of ${MAX_FILE_SIZE_MB} MB`,
+              technicalDetails: `File size: ${fileSizeMB.toFixed(1)} MB`,
+              failurePoint: 'validation',
+            };
+            results.push(result);
             continue;
           }
 
@@ -187,107 +316,118 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
           const isBinary = await isBinaryEVTX(file);
 
           if (isBinary) {
-            // Memory-optimized path: Direct WASM → LogEntry conversion
+            // Binary EVTX path
             setProcessingStatus(`[${i + 1}/${files.length}] Parsing binary EVTX: ${file.name}`);
 
-            const entries = await parseBinaryEVTXToEntries(
-              file,
-              (processed, total) => {
-                const totalDisplay = total ? total.toLocaleString() : 'unknown';
-                const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
-                setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${totalDisplay} records${percentage}`);
-              },
-              file.name
-            );
+            try {
+              const entries = await parseBinaryEVTXToEntries(
+                file,
+                (processed, total) => {
+                  const totalDisplay = total ? total.toLocaleString() : 'unknown';
+                  const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
+                  setProcessingStatus(
+                    `[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${totalDisplay} records${percentage}`
+                  );
+                },
+                file.name
+              );
 
-            const parsedData: ParsedData = {
-              entries,
-              format: 'evtx',
-              totalLines: entries.length,
-              parsedLines: entries.length,
-              sourceFiles: [file.name],
-            };
+              const parsedData: ParsedData = {
+                entries,
+                format: 'evtx',
+                totalLines: entries.length,
+                parsedLines: entries.length,
+                sourceFiles: [file.name],
+              };
 
-            allParsedData.push(parsedData);
-            filenames.push(file.name);
+              result.status = 'success';
+              result.parsedData = parsedData;
+              result.recordCount = entries.length;
+            } catch (parseError) {
+              // Categorize WASM parsing errors
+              result.error = categorizeWasmError(parseError, file.name);
+            }
           } else {
-            // XML path: Read and parse with DOMParser
+            // XML path
             const CHUNK_SIZE = 10 * 1024 * 1024;
             const fileChunks = Math.ceil(file.size / CHUNK_SIZE);
             setTotalChunks(fileChunks);
-
             setProcessingStatus(`[${i + 1}/${files.length}] Reading ${file.name}...`);
 
-            const xmlContent = await new Promise<string>((resolve, reject) => {
-              const chunks: string[] = [];
-              let offset = 0;
-              let loadedChunks = 0;
+            try {
+              const xmlContent = await new Promise<string>((resolve, reject) => {
+                const chunks: string[] = [];
+                let offset = 0;
+                let loadedChunks = 0;
 
-              const readNextChunk = () => {
-                const blob = file.slice(offset, offset + CHUNK_SIZE);
-                const reader = new FileReader();
+                const readNextChunk = () => {
+                  const blob = file.slice(offset, offset + CHUNK_SIZE);
+                  const reader = new FileReader();
 
-                reader.onload = (e) => {
-                  chunks.push(e.target?.result as string);
-                  offset += CHUNK_SIZE;
-                  loadedChunks++;
-                  setChunksProcessed(loadedChunks);
+                  reader.onload = (e) => {
+                    chunks.push(e.target?.result as string);
+                    offset += CHUNK_SIZE;
+                    loadedChunks++;
+                    setChunksProcessed(loadedChunks);
 
-                  if (offset < file.size) {
-                    readNextChunk();
-                  } else {
-                    resolve(chunks.join(''));
-                  }
+                    if (offset < file.size) {
+                      readNextChunk();
+                    } else {
+                      resolve(chunks.join(''));
+                    }
+                  };
+
+                  reader.onerror = () => reject(new Error(`Error reading ${file.name}`));
+                  reader.readAsText(blob);
                 };
 
-                reader.onerror = () => reject(new Error(`Error reading ${file.name}`));
-                reader.readAsText(blob);
-              };
+                readNextChunk();
+              });
 
-              readNextChunk();
-            });
+              // Parse XML
+              setProcessingStatus(`[${i + 1}/${files.length}] Parsing events from ${file.name}...`);
+              const parsedData = parseLogFile(
+                xmlContent,
+                (processed, total) => {
+                  setProcessingStatus(
+                    `[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`
+                  );
+                },
+                file.name
+              );
 
-            // Parse XML
-            setProcessingStatus(`[${i + 1}/${files.length}] Parsing events from ${file.name}...`);
-            const parsedData = parseLogFile(xmlContent, (processed, total) => {
-              setProcessingStatus(`[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`);
-            }, file.name);
-
-            allParsedData.push(parsedData);
-            filenames.push(file.name);
+              result.status = 'success';
+              result.parsedData = parsedData;
+              result.recordCount = parsedData.entries.length;
+            } catch (xmlError) {
+              // Categorize XML parsing errors
+              result.error = categorizeXmlError(xmlError, file.name);
+            }
           }
-
-          // Reset progress for next file
-          setChunksProcessed(0);
-          setTotalChunks(0);
+        } catch (error) {
+          // Catch-all for unexpected errors
+          result.error = {
+            type: ErrorType.UNKNOWN_ERROR,
+            message: 'An unexpected error occurred while processing this file',
+            technicalDetails: error instanceof Error ? error.message : String(error),
+            failurePoint: 'reading',
+          };
         }
 
-        // Merge all parsed data
-        setProcessingStatus('Merging data from all files...');
-        const mergedData: ParsedData = {
-          entries: allParsedData.flatMap(data => data.entries),
-          format: 'evtx',
-          totalLines: allParsedData.reduce((sum, data) => sum + data.totalLines, 0),
-          parsedLines: allParsedData.reduce((sum, data) => sum + data.parsedLines, 0),
-          sourceFiles: filenames,
-        };
-
-        // Load analysis selector
-        setProcessingStatus('Loading analysis selector...');
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        onFileLoaded(mergedData, filenames.join(', '));
-        setIsProcessing(false);
-        setCurrentFileIndex(0);
-        setTotalFiles(0);
-      } catch (error) {
-        alert(`Error processing files: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setIsProcessing(false);
-        setCurrentFileIndex(0);
-        setTotalFiles(0);
+        results.push(result);
+        setChunksProcessed(0);
+        setTotalChunks(0);
       }
+
+      // Processing complete - aggregate results
+      const aggregatedResults = aggregateResults(results);
+
+      // Show results modal
+      setIsProcessing(false);
+      setShowProcessingResults(true);
+      setProcessingResults(aggregatedResults);
     },
-    [onFileLoaded, handleFile]
+    [onFileLoaded, handleFile, categorizeWasmError, categorizeXmlError, aggregateResults]
   );
 
   const handleSampleSelect = useCallback(
@@ -464,6 +604,25 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
         <SampleSelector
           onSelectSample={handleSampleSelect}
           onClose={() => setShowSampleSelector(false)}
+        />
+      )}
+
+      {showProcessingResults && processingResults && (
+        <FileProcessingResultsModal
+          results={processingResults}
+          onProceed={(mergedData) => {
+            setShowProcessingResults(false);
+            setProcessingResults(null);
+            setCurrentFileIndex(0);
+            setTotalFiles(0);
+            onFileLoaded(mergedData, processingResults.successfulFiles.map(f => f.filename).join(', '));
+          }}
+          onCancel={() => {
+            setShowProcessingResults(false);
+            setProcessingResults(null);
+            setCurrentFileIndex(0);
+            setTotalFiles(0);
+          }}
         />
       )}
     </div>
