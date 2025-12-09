@@ -47,16 +47,21 @@ function parseEVTXXML(
         // Continue processing with what we have
       } else {
         throw new Error(
-          `XML file is too large or corrupted. The browser cannot parse this 346MB XML file.\n\n` +
+          `XML file parsing failed.\n\n` +
+          `File: ${filename || 'unknown'}\n` +
+          `Error: ${errorText}\n\n` +
           `Recommendations:\n` +
-          `1. Use the binary .evtx file instead (not the XML export)\n` +
+          `1. Use the binary .evtx file instead of XML export\n` +
           `2. Split the XML into smaller files\n` +
-          `3. Filter events in Event Viewer before exporting\n\n` +
-          `Error: ${errorText}`
+          `3. Filter events in Event Viewer before exporting`
         );
       }
     } else {
-      throw new Error(`XML parsing failed: ${errorText}`);
+      throw new Error(
+        `XML parsing failed: ${errorText}\n` +
+        `File: ${filename || 'unknown'}\n\n` +
+        `Recommendation: Use binary .evtx file instead of XML export`
+      );
     }
   }
 

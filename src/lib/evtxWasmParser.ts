@@ -416,7 +416,17 @@ export async function parseBinaryEVTXToEntries(
     entries.length = recordsProcessed;
 
     if (entries.length === 0) {
-      throw new Error('No records were successfully parsed from the EVTX file');
+      throw new Error(
+        `No records were successfully parsed from the EVTX file.\n\n` +
+        `File info:\n` +
+        `- Expected records: ${totalRecords || 'unknown'}\n` +
+        `- Chunks processed: ${totalChunks}\n` +
+        `- Chunks skipped due to errors: ${skippedChunks}\n\n` +
+        `This could indicate:\n` +
+        `1. The file is empty or corrupted\n` +
+        `2. All event records failed to parse\n` +
+        `3. The file format is not supported`
+      );
     }
 
     return entries;

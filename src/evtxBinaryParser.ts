@@ -156,7 +156,14 @@ export async function parseBinaryEVTX(file: File): Promise<string> {
       const header = parseEVTXHeader(buffer);
 
       if (!header) {
-        reject(new Error('Invalid EVTX file format - missing "ElfFile" signature'));
+        reject(new Error(
+          `Invalid EVTX file format.\n\n` +
+          `Expected magic signature: "ElfFile\\0"\n` +
+          `This file does not appear to be a valid binary EVTX file.\n\n` +
+          `Please ensure you're using:\n` +
+          `1. A valid .evtx file from Windows Event Viewer\n` +
+          `2. Not a manually edited or corrupted file`
+        ));
         return;
       }
 
