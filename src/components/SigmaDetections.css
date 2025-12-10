@@ -464,22 +464,27 @@
 }
 
 .field-selection-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
   padding: 0.75rem;
   background: var(--tooltip-bg);
   border: 1px solid var(--accent-blue);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
   white-space: pre-wrap;
-  max-width: 400px;
+  max-width: min(400px, 90vw);
+  max-height: min(300px, 60vh);
+  overflow-y: auto;
   word-wrap: break-word;
   z-index: 10001;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
+
+  /* Position will be set via JavaScript for viewport-aware placement */
+  /* Default: centered above the element */
+  bottom: auto;
+  left: auto;
+  transform: none;
 }
 
 .field-selection-wrapper:hover .field-selection-tooltip {
@@ -495,15 +500,8 @@
   line-height: 1.5;
 }
 
-.field-selection-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--accent-blue);
-}
+/* Removed tooltip arrow since dynamic positioning makes it unreliable */
+/* The tooltip now uses viewport-aware JavaScript positioning */
 
 .field-value {
   color: var(--text-secondary);

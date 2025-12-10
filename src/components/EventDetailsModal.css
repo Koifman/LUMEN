@@ -30,12 +30,13 @@
   border: 1px solid var(--border-primary);
   border-radius: 12px;
   width: 100%;
-  max-width: 900px;
-  max-height: 85vh;
+  max-width: min(900px, 95vw);
+  max-height: min(85vh, calc(100vh - 4rem));
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.3s ease;
+  margin: auto; /* Center within flex container */
 }
 
 @keyframes slideUp {

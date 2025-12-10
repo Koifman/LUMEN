@@ -240,6 +240,68 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
     }).filter(([, ruleMatches]) => ruleMatches.length > 0);
   }, [sortedMatches, selectedFile]);
 
+  // Tooltip viewport-aware positioning
+  useEffect(() => {
+    const positionTooltip = (wrapper: HTMLElement, tooltip: HTMLElement) => {
+      const triggerRect = wrapper.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const padding = 8; // Space from viewport edge
+
+      // Default: position above and centered
+      let top = triggerRect.top - tooltipRect.height - padding;
+      let left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+
+      // Check if tooltip would overflow top of viewport
+      if (top < padding) {
+        // Position below instead
+        top = triggerRect.bottom + padding;
+      }
+
+      // Check if tooltip would overflow bottom of viewport when positioned below
+      if (top + tooltipRect.height > viewportHeight - padding) {
+        // Try positioning above again, even if it clips slightly
+        top = Math.max(padding, triggerRect.top - tooltipRect.height - padding);
+      }
+
+      // Check if tooltip would overflow left edge
+      if (left < padding) {
+        left = padding;
+      }
+
+      // Check if tooltip would overflow right edge
+      if (left + tooltipRect.width > viewportWidth - padding) {
+        left = viewportWidth - tooltipRect.width - padding;
+      }
+
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+    };
+
+    const handleMouseEnter = (e: Event) => {
+      const wrapper = e.currentTarget as HTMLElement;
+      const tooltip = wrapper.querySelector('.field-selection-tooltip') as HTMLElement;
+      if (tooltip) {
+        // Position tooltip on next frame to ensure dimensions are calculated
+        requestAnimationFrame(() => positionTooltip(wrapper, tooltip));
+      }
+    };
+
+    // Attach event listeners to all tooltip wrappers
+    const wrappers = document.querySelectorAll('.field-selection-wrapper');
+    wrappers.forEach(wrapper => {
+      wrapper.addEventListener('mouseenter', handleMouseEnter);
+    });
+
+    return () => {
+      wrappers.forEach(wrapper => {
+        wrapper.removeEventListener('mouseenter', handleMouseEnter);
+      });
+    };
+  }, [matches, expandedRule, visibleCount]); // Re-attach when content changes
+
   // Window scroll handler for infinite scroll
   // Using window scroll since parent containers control scrolling
   // Track last scroll position to only trigger on actual scroll down
