@@ -250,15 +250,16 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
       const padding = 8; // Space from viewport edge
 
       // Make tooltip visible temporarily to measure its dimensions
-      tooltip.style.opacity = '0';
-      tooltip.style.pointerEvents = 'none';
+      const originalVisibility = tooltip.style.visibility;
+      tooltip.style.visibility = 'hidden';
       tooltip.style.display = 'block';
 
       const tooltipWidth = tooltip.offsetWidth;
       const tooltipHeight = tooltip.offsetHeight;
 
-      // Reset display
+      // Reset display and visibility
       tooltip.style.display = '';
+      tooltip.style.visibility = originalVisibility;
 
       // Default: position above and centered
       let top = triggerRect.top - tooltipHeight - padding;
