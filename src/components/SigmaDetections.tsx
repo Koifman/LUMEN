@@ -244,15 +244,25 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
   useEffect(() => {
     const positionTooltip = (wrapper: HTMLElement, tooltip: HTMLElement) => {
       const triggerRect = wrapper.getBoundingClientRect();
-      const tooltipRect = tooltip.getBoundingClientRect();
 
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const padding = 8; // Space from viewport edge
 
+      // Make tooltip visible temporarily to measure its dimensions
+      tooltip.style.opacity = '0';
+      tooltip.style.pointerEvents = 'none';
+      tooltip.style.display = 'block';
+
+      const tooltipWidth = tooltip.offsetWidth;
+      const tooltipHeight = tooltip.offsetHeight;
+
+      // Reset display
+      tooltip.style.display = '';
+
       // Default: position above and centered
-      let top = triggerRect.top - tooltipRect.height - padding;
-      let left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+      let top = triggerRect.top - tooltipHeight - padding;
+      let left = triggerRect.left + (triggerRect.width / 2) - (tooltipWidth / 2);
 
       // Check if tooltip would overflow top of viewport
       if (top < padding) {
@@ -261,9 +271,9 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
       }
 
       // Check if tooltip would overflow bottom of viewport when positioned below
-      if (top + tooltipRect.height > viewportHeight - padding) {
+      if (top + tooltipHeight > viewportHeight - padding) {
         // Try positioning above again, even if it clips slightly
-        top = Math.max(padding, triggerRect.top - tooltipRect.height - padding);
+        top = Math.max(padding, triggerRect.top - tooltipHeight - padding);
       }
 
       // Check if tooltip would overflow left edge
@@ -272,8 +282,8 @@ export default function SigmaDetections({ events, sigmaEngine, onMatchesUpdate, 
       }
 
       // Check if tooltip would overflow right edge
-      if (left + tooltipRect.width > viewportWidth - padding) {
-        left = viewportWidth - tooltipRect.width - padding;
+      if (left + tooltipWidth > viewportWidth - padding) {
+        left = viewportWidth - tooltipWidth - padding;
       }
 
       tooltip.style.top = `${top}px`;
