@@ -41,7 +41,7 @@ export interface FileProcessingError {
   technicalDetails?: string;
 
   // Context
-  failurePoint?: 'validation' | 'reading' | 'parsing' | 'conversion';
+  failurePoint?: 'validation' | 'reading' | 'parsing' | 'conversion' | 'extraction';
   partialRecordsParsed?: number;
   totalChunksAttempted?: number;
   failedChunks?: number;

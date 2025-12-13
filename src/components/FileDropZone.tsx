@@ -12,6 +12,7 @@ import {
   ErrorType,
   MultiFileProcessingResults,
 } from '../types/fileProcessing';
+import { isZipFile, extractFilesFromZip } from '../lib/zipUtils';
 import './FileDropZone.css';
 
 interface FileDropZoneProps {
@@ -270,25 +271,82 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
     async (files: FileList) => {
       if (files.length === 0) return;
 
-      // If only one file, use the original handler (maintains backward compatibility)
-      if (files.length === 1) {
-        handleFile(files[0]);
+      setIsProcessing(true);
+      setProcessingStatus('Checking for ZIP archives...');
+
+      // First pass: Check for ZIP files and extract them
+      const filesToProcess: File[] = [];
+      const zipExtractionErrors: FileProcessingResult[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isZip = await isZipFile(file);
+
+        if (isZip) {
+          setProcessingStatus(`Extracting ${file.name}...`);
+          const extractionResult = await extractFilesFromZip(file);
+
+          if (extractionResult.success && extractionResult.files.length > 0) {
+            // Add all extracted files to the processing queue
+            // Modify the filename to show it came from a ZIP
+            extractionResult.files.forEach(extracted => {
+              const modifiedFile = new File(
+                [extracted.file],
+                extracted.file.name,
+                { type: extracted.file.type }
+              );
+              // Store the ZIP source info in a custom property for tracking
+              (modifiedFile as any)._zipSource = {
+                zipName: file.name,
+                originalPath: extracted.originalPath
+              };
+              filesToProcess.push(modifiedFile);
+            });
+          } else {
+            // ZIP extraction failed
+            zipExtractionErrors.push({
+              filename: file.name,
+              fileSize: file.size,
+              status: 'error',
+              error: {
+                type: ErrorType.INVALID_FORMAT,
+                message: extractionResult.error || 'Failed to extract ZIP archive',
+                technicalDetails: extractionResult.error || 'No EVTX or XML files found',
+                failurePoint: 'extraction',
+              },
+            });
+          }
+        } else {
+          // Not a ZIP file, add directly to processing queue
+          filesToProcess.push(file);
+        }
+      }
+
+      // If only one file to process, use the original handler (maintains backward compatibility)
+      if (filesToProcess.length === 1 && zipExtractionErrors.length === 0) {
+        handleFile(filesToProcess[0]);
         return;
       }
 
-      setIsProcessing(true);
-      setTotalFiles(files.length);
+      setTotalFiles(filesToProcess.length);
       setCurrentFileIndex(0);
       setChunksProcessed(0);
       setTotalChunks(0);
 
-      const results: FileProcessingResult[] = [];
+      const results: FileProcessingResult[] = [...zipExtractionErrors];
 
       // Process each file sequentially with per-file error handling
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const file = filesToProcess[i];
         setCurrentFileIndex(i + 1);
-        setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}`);
+
+        // Check if this file came from a ZIP and adjust the display name
+        const zipSource = (file as any)._zipSource;
+        const displayName = zipSource
+          ? `${file.name} (from ${zipSource.zipName})`
+          : file.name;
+
+        setProcessingStatus(`Processing file ${i + 1} of ${filesToProcess.length}: ${displayName}`);
 
         const result: FileProcessingResult = {
           filename: file.name,
@@ -317,7 +375,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
 
           if (isBinary) {
             // Binary EVTX path
-            setProcessingStatus(`[${i + 1}/${files.length}] Parsing binary EVTX: ${file.name}`);
+            setProcessingStatus(`[${i + 1}/${filesToProcess.length}] Parsing binary EVTX: ${displayName}`);
 
             try {
               const entries = await parseBinaryEVTXToEntries(
@@ -326,7 +384,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
                   const totalDisplay = total ? total.toLocaleString() : 'unknown';
                   const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
                   setProcessingStatus(
-                    `[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${totalDisplay} records${percentage}`
+                    `[${i + 1}/${filesToProcess.length}] ${displayName}: ${processed.toLocaleString()} / ${totalDisplay} records${percentage}`
                   );
                 },
                 file.name
@@ -352,7 +410,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
             const CHUNK_SIZE = 10 * 1024 * 1024;
             const fileChunks = Math.ceil(file.size / CHUNK_SIZE);
             setTotalChunks(fileChunks);
-            setProcessingStatus(`[${i + 1}/${files.length}] Reading ${file.name}...`);
+            setProcessingStatus(`[${i + 1}/${filesToProcess.length}] Reading ${displayName}...`);
 
             try {
               const xmlContent = await new Promise<string>((resolve, reject) => {
@@ -385,12 +443,12 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
               });
 
               // Parse XML
-              setProcessingStatus(`[${i + 1}/${files.length}] Parsing events from ${file.name}...`);
+              setProcessingStatus(`[${i + 1}/${filesToProcess.length}] Parsing events from ${displayName}...`);
               const parsedData = parseLogFile(
                 xmlContent,
                 (processed, total) => {
                   setProcessingStatus(
-                    `[${i + 1}/${files.length}] ${file.name}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`
+                    `[${i + 1}/${filesToProcess.length}] ${displayName}: ${processed.toLocaleString()} / ${total.toLocaleString()} events`
                   );
                 },
                 file.name
@@ -537,8 +595,8 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
           </>
         ) : (
           <>
-            <h2>Drop your EVTX/XML file(s) here</h2>
-            <p>Windows Event Log files (.evtx) - binary or XML export</p>
+            <h2>Drop your EVTX/XML/ZIP file(s) here</h2>
+            <p>Windows Event Log files (.evtx) - binary or XML export, or ZIP archives containing logs</p>
             <p className="info-note">💡 You can select multiple files at once</p>
             <p className="info-note">💡 File size limit: 1GB per file</p>
         <p className="privacy-note">🔒 100% client-side processing - your data never leaves your computer (except when using AI analysis)</p>
@@ -546,7 +604,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
             <label className="file-input-label">
               <input
                 type="file"
-                accept=".evtx,.xml"
+                accept=".evtx,.xml,.zip"
                 onChange={handleFileInput}
                 style={{ display: 'none' }}
                 disabled={rulesLoading || isProcessing}
