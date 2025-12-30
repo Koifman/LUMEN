@@ -22,6 +22,25 @@ export interface ReportData {
   options: ReportOptions;
 }
 
+// Field match details for export
+interface ExtractedFieldMatch {
+  field: string;
+  value: any;
+  modifier?: string;
+  matchedPattern?: string | number | null | (string | number | null)[];
+  selection: string;
+}
+
+// Essential event data for export
+interface EssentialEventData {
+  eventId?: number;
+  computer?: string;
+  timestamp: string;
+  source?: string;
+  sourceFile?: string;
+  level?: string;
+}
+
 // Generate full analysis report
 export function generateReport(reportData: ReportData): string {
   const { format } = reportData.options;
@@ -115,6 +134,12 @@ function generateHTMLReport(reportData: ReportData): string {
     li { margin: 0.5rem 0; }
     code { background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
     .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #2a2a3e; color: var(--text-muted); font-size: 0.85rem; text-align: center; }
+    .detection-sample { margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-left: 3px solid var(--accent-blue); border-radius: 4px; }
+    .detection-sample-header { font-weight: 600; color: var(--accent-blue); margin-bottom: 0.5rem; }
+    .field-match-table { width: 100%; margin-top: 0.5rem; font-size: 0.85rem; }
+    .field-match-table th { background: rgba(96, 165, 250, 0.1); font-weight: 600; padding: 0.5rem; }
+    .field-match-table td { padding: 0.5rem; word-break: break-all; }
+    .field-modifier { display: inline-block; padding: 0.1rem 0.4rem; background: rgba(168, 85, 247, 0.2); color: var(--accent-purple); border-radius: 3px; font-size: 0.7rem; margin-left: 0.25rem; }
     @media print {
       body { background: white; color: black; }
       .stat-card, .summary-box, .chain-card { border: 1px solid #ddd; }
@@ -221,6 +246,93 @@ function generateHTMLReport(reportData: ReportData): string {
       </tbody>
     </table>
 `;
+
+    // Add detection samples section
+    html += `
+    <h3>Detection Samples</h3>
+    <p>Showing up to 5 sample detections per rule</p>
+`;
+
+    sortedRules.forEach(([, matches]) => {
+      const rule = matches[0].rule;
+      const samples = matches.slice(0, 5); // First 5 samples
+
+      html += `
+    <div class="detection-sample">
+      <div class="detection-sample-header">${escapeHtml(rule.title)}</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Showing ${samples.length} of ${matches.length} detection(s)
+      </div>
+`;
+
+      samples.forEach((match, idx) => {
+        const eventData = extractEssentialEventData(match);
+        const fieldMatches = extractFieldMatches(match);
+
+        html += `
+      <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">
+          Sample ${idx + 1} - Event ${eventData.eventId || 'N/A'} - ${escapeHtml(eventData.computer || 'N/A')}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          ${new Date(eventData.timestamp).toLocaleString()}
+          ${eventData.sourceFile ? ` | File: ${escapeHtml(eventData.sourceFile)}` : ''}
+        </div>
+`;
+
+        if (fieldMatches.length > 0) {
+          html += `
+        <table class="field-match-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+              <th>Selection</th>
+            </tr>
+          </thead>
+          <tbody>
+`;
+
+          fieldMatches.forEach(fm => {
+            const valueStr = fm.value === '' ? '(empty)' : String(fm.value).substring(0, 150);
+            const truncated = String(fm.value).length > 150 ? '...' : '';
+            html += `
+            <tr>
+              <td>
+                ${escapeHtml(fm.field)}
+                ${fm.modifier ? `<span class="field-modifier">${escapeHtml(fm.modifier)}</span>` : ''}
+              </td>
+              <td><code>${escapeHtml(valueStr)}${truncated}</code></td>
+              <td>${escapeHtml(fm.selection)}</td>
+            </tr>
+`;
+          });
+
+          html += `
+          </tbody>
+        </table>
+`;
+        } else {
+          html += `<p style="font-size: 0.85rem; color: var(--text-muted);">No field match details available</p>`;
+        }
+
+        // Add raw event data
+        html += `
+        <details style="margin-top: 0.75rem;">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--accent-purple); font-size: 0.85rem;">View Raw Event Data</summary>
+          <pre style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(0,0,0,0.3); border-radius: 4px; overflow-x: auto; font-size: 0.75rem;"><code>${escapeHtml(JSON.stringify(match.event, null, 2))}</code></pre>
+        </details>
+`;
+
+        html += `
+      </div>
+`;
+      });
+
+      html += `
+    </div>
+`;
+    });
   }
 
   // Correlation Chains
@@ -424,6 +536,61 @@ function generateMarkdownReport(reportData: ReportData): string {
       });
 
     md += '\n';
+
+    // Add detection samples section
+    md += `### Detection Samples\n\n`;
+    md += 'Showing up to 3 sample detections per rule.\n\n';
+
+    // Sort rule groups by severity for detection samples
+    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, informational: 4 };
+    const sortedRules = Array.from(ruleGroups.entries()).sort((a, b) => {
+      const aLevel = a[1][0].rule.level || 'informational';
+      const bLevel = b[1][0].rule.level || 'informational';
+      return (severityOrder[aLevel as keyof typeof severityOrder] || 5) -
+             (severityOrder[bLevel as keyof typeof severityOrder] || 5);
+    });
+
+    sortedRules.forEach(([title, matches]) => {
+      const samples = matches.slice(0, 3); // First 3 samples
+
+      md += `#### ${title}\n\n`;
+      md += `Showing ${samples.length} of ${matches.length} detection(s)\n\n`;
+
+      samples.forEach((match, idx) => {
+        const eventData = extractEssentialEventData(match);
+        const fieldMatches = extractFieldMatches(match);
+
+        md += `**Sample ${idx + 1}**\n\n`;
+        md += `- **Event ID:** ${eventData.eventId || 'N/A'}\n`;
+        md += `- **Computer:** ${eventData.computer || 'N/A'}\n`;
+        md += `- **Timestamp:** ${new Date(eventData.timestamp).toLocaleString()}\n`;
+        if (eventData.sourceFile) {
+          md += `- **Source File:** ${eventData.sourceFile}\n`;
+        }
+
+        if (fieldMatches.length > 0) {
+          md += `\n**Matched Fields:**\n\n`;
+          md += `| Field | Value | Selection | Modifier |\n`;
+          md += `|-------|-------|-----------|----------|\n`;
+
+          fieldMatches.forEach(fm => {
+            const valueStr = fm.value === '' ? '(empty)' : String(fm.value).substring(0, 100);
+            const truncated = String(fm.value).length > 100 ? '...' : '';
+            const escapedValue = valueStr.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+            md += `| ${fm.field} | \`${escapedValue}${truncated}\` | ${fm.selection} | ${fm.modifier || '-'} |\n`;
+          });
+
+          md += '\n';
+        } else {
+          md += `\n*No field match details available*\n\n`;
+        }
+
+        // Add raw event data
+        md += `\n<details>\n<summary>View Raw Event Data</summary>\n\n\`\`\`json\n${JSON.stringify(match.event, null, 2)}\n\`\`\`\n\n</details>\n\n`;
+      });
+
+      md += '---\n\n';
+    });
   }
 
   if (options.includeCorrelationChains && chains.length > 0) {
@@ -485,16 +652,29 @@ function generateJSONReport(reportData: ReportData): string {
   };
 
   if (options.includeSigmaMatches) {
-    report.sigmaMatches = allMatches.map(m => ({
-      rule: {
-        id: m.rule.id,
-        title: m.rule.title,
-        level: m.rule.level,
-        description: m.rule.description,
-      },
-      timestamp: m.timestamp,
-      computer: m.event?.computer,
-    }));
+    report.sigmaMatches = allMatches.map(m => {
+      const fieldMatches = extractFieldMatches(m);
+      return {
+        rule: {
+          id: m.rule.id,
+          title: m.rule.title,
+          level: m.rule.level,
+          description: m.rule.description,
+        },
+        event: extractEssentialEventData(m),
+        rawEvent: m.event, // Include the complete original event data
+        detectionDetails: {
+          matchedFields: fieldMatches.map(fm => ({
+            field: fm.field,
+            value: fm.value,
+            selection: fm.selection,
+            modifier: fm.modifier,
+            matchedPattern: fm.matchedPattern,
+          })),
+          totalFieldsMatched: fieldMatches.length,
+        },
+      };
+    });
   }
 
   if (options.includeCorrelationChains) {
@@ -537,6 +717,78 @@ function formatDuration(ms: number): string {
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
   if (ms < 3600000) return `${(ms / 60000).toFixed(1)}m`;
   return `${(ms / 3600000).toFixed(1)}h`;
+}
+
+/**
+ * Extract field match details from a SIGMA rule match
+ * @param match - The SIGMA rule match object
+ * @returns Array of extracted field matches with relevant details
+ */
+function extractFieldMatches(match: SigmaRuleMatch): ExtractedFieldMatch[] {
+  const results: ExtractedFieldMatch[] = [];
+
+  if (!match.selectionMatches || match.selectionMatches.length === 0) {
+    return results;
+  }
+
+  for (const selMatch of match.selectionMatches) {
+    if (!selMatch.fieldMatches) continue;
+
+    const isFilterSelection = selMatch.selection.toLowerCase().startsWith('filter');
+
+    for (const fm of selMatch.fieldMatches) {
+      // Skip undefined/null values unless it's a filter selection
+      if (!isFilterSelection && (fm.value === undefined || fm.value === null)) {
+        continue;
+      }
+
+      // Truncate very long values (>500 chars) for export
+      let value = fm.value;
+      if (typeof value === 'string' && value.length > 500) {
+        value = value.substring(0, 500) + '...';
+      } else if (Array.isArray(value)) {
+        value = value.join(', ');
+        if (typeof value === 'string' && value.length > 500) {
+          value = value.substring(0, 500) + '...';
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        value = JSON.stringify(value);
+        if (value.length > 500) {
+          value = value.substring(0, 500) + '...';
+        }
+      }
+
+      results.push({
+        field: fm.field,
+        value: value,
+        selection: selMatch.selection,
+        modifier: fm.modifier,
+        matchedPattern: fm.matchedPattern,
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Extract essential event data from a SIGMA rule match
+ * @param match - The SIGMA rule match object
+ * @returns Essential event metadata
+ */
+function extractEssentialEventData(match: SigmaRuleMatch): EssentialEventData {
+  const event = match.event as any;
+
+  return {
+    eventId: event?.EventID || event?.eventId,
+    computer: event?.Computer || event?.computer,
+    timestamp: match.timestamp instanceof Date
+      ? match.timestamp.toISOString()
+      : new Date(match.timestamp).toISOString(),
+    source: event?.Source || event?.source || event?.Provider_Name,
+    sourceFile: event?.sourceFile,
+    level: event?.Level || event?.level,
+  };
 }
 
 // Download report as file
