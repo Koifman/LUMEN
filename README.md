@@ -59,3 +59,6 @@ git submodule update --init --recursive
 
 ## License
 MIT — see [LICENSE](LICENSE).
+
+## Support me
+If you enjoyed LUMEN - feel free to [support](https://ko-fi.com/koifsec) the work!
