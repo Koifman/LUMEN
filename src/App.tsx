@@ -439,13 +439,6 @@ function App() {
                   <p>Events with SIGMA detections show detailed matched fields, rule descriptions, and severity levels. Non-SIGMA events display raw log data for quick analysis.</p>
                 </div>
               </div>
-              <div className="feature-item">
-                <div className="feature-icon">🔗</div>
-                <div className="feature-content">
-                  <strong>Chain Linking</strong>
-                  <p>Automatically discover which correlation chains contain your IOC. Jump from indicators to full attack sequences with one click.</p>
-                </div>
-              </div>
             </div>
             <button className="feedback-close features-close-btn" onClick={() => {
               setShowIOCPivotAnnouncement(false);

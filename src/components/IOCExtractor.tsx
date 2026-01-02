@@ -2,7 +2,6 @@ import { useMemo, useState, useCallback } from 'react';
 import { LogEntry } from '../types';
 import { lookupIOC, VTResponse, getAPIKey, saveAPIKey, clearAPIKey } from '../lib/virusTotal';
 import { SigmaRuleMatch } from '../lib/sigma/types';
-import { CorrelatedChain } from '../lib/correlationEngine';
 import { IOCPivotView } from './IOCPivotView';
 import './IOCExtractor.css';
 
@@ -10,7 +9,6 @@ interface IOCExtractorProps {
   entries: LogEntry[];
   onBack: () => void;
   sigmaMatches?: Map<string, SigmaRuleMatch[]>;
-  correlationChains?: CorrelatedChain[];
 }
 
 // IOC types
@@ -207,7 +205,7 @@ const BENIGN_PATHS = [
   '/sbin'
 ];
 
-export default function IOCExtractor({ entries, onBack, sigmaMatches, correlationChains }: IOCExtractorProps) {
+export default function IOCExtractor({ entries, onBack, sigmaMatches }: IOCExtractorProps) {
   const [selectedTypes, setSelectedTypes] = useState<Set<IOCType>>(
     new Set(['ip', 'domain', 'hash', 'filepath', 'url', 'email', 'registry', 'base64'])
   );
@@ -725,7 +723,6 @@ export default function IOCExtractor({ entries, onBack, sigmaMatches, correlatio
           type={pivotIOC.type}
           entries={entries}
           sigmaMatches={sigmaMatches || new Map()}
-          correlationChains={correlationChains}
           onClose={() => setPivotIOC(null)}
         />
       )}

@@ -1,13 +1,11 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { LogEntry } from '../types';
 import { SigmaRuleMatch } from '../lib/sigma/types';
-import { CorrelatedChain } from '../lib/correlationEngine';
 import {
   IOCType,
   IOCSearchResult,
   IOCEventMatch,
   searchIOCInEvents,
-  findChainsContainingIOC,
   getIOCTypeLabel,
   getIOCTypeIcon,
 } from '../lib/iocSearchEngine';
@@ -19,21 +17,17 @@ interface IOCPivotViewProps {
   type: IOCType;
   entries: LogEntry[];
   sigmaMatches: Map<string, SigmaRuleMatch[]>;
-  correlationChains?: CorrelatedChain[];
   onClose: () => void;
-  onNavigateToChain?: (chainId: string) => void;
 }
 
-type TabType = 'all' | 'byFile' | 'byType' | 'chains';
+type TabType = 'all' | 'byFile' | 'byType';
 
 export function IOCPivotView({
   ioc,
   type,
   entries,
   sigmaMatches,
-  correlationChains,
   onClose,
-  onNavigateToChain,
 }: IOCPivotViewProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -47,17 +41,11 @@ export function IOCPivotView({
     setIsSearching(true);
     try {
       const result = searchIOCInEvents(ioc, type, entries, sigmaMatches);
-
-      // Add correlation chain info if available
-      if (correlationChains && correlationChains.length > 0) {
-        result.relatedChainIds = findChainsContainingIOC(ioc, type, correlationChains);
-      }
-
       return result;
     } finally {
       setIsSearching(false);
     }
-  }, [ioc, type, entries, sigmaMatches, correlationChains]);
+  }, [ioc, type, entries, sigmaMatches]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -103,7 +91,6 @@ export function IOCPivotView({
 
     const fileCount = searchResult.eventsByFile.size;
     const sigmaCount = searchResult.events.filter(e => e.hasSigmaMatch).length;
-    const chainCount = searchResult.relatedChainIds.length;
 
     return (
       <div className="pivot-stats-bar">
@@ -119,12 +106,6 @@ export function IOCPivotView({
           <span className="pivot-stat-value">{sigmaCount}</span>
           <span className="pivot-stat-label">SIGMA Hits</span>
         </div>
-        {correlationChains && (
-          <div className="pivot-stat">
-            <span className="pivot-stat-value">{chainCount}</span>
-            <span className="pivot-stat-label">Chains</span>
-          </div>
-        )}
         {searchResult.firstSeen && searchResult.lastSeen && (
           <div className="pivot-stat pivot-stat-time">
             <span className="pivot-stat-value">
@@ -288,65 +269,6 @@ export function IOCPivotView({
     );
   };
 
-  // Render "Chains" tab
-  const renderChains = () => {
-    if (!searchResult || !correlationChains) return null;
-
-    const relatedChains = correlationChains.filter(chain =>
-      searchResult.relatedChainIds.includes(chain.id)
-    );
-
-    if (relatedChains.length === 0) {
-      return (
-        <div className="pivot-no-chains">
-          <p>No correlation chains contain events with this IOC.</p>
-          <p className="pivot-no-chains-hint">
-            Run SIGMA detection and Event Correlation first to see attack chains.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="pivot-chains-list">
-        {relatedChains.map(chain => (
-          <div
-            key={chain.id}
-            className={`pivot-chain-card pivot-chain-${chain.severity}`}
-            onClick={() => onNavigateToChain?.(chain.id)}
-          >
-            <div className="pivot-chain-header">
-              <span className={`pivot-chain-severity ${chain.severity}`}>
-                {chain.severity.toUpperCase()}
-              </span>
-              <span className="pivot-chain-events">
-                {chain.events.length} events
-              </span>
-              <span className="pivot-chain-score">
-                Score: {chain.score}
-              </span>
-            </div>
-            <div className="pivot-chain-summary">
-              {chain.summary || 'No summary available'}
-            </div>
-            <div className="pivot-chain-meta">
-              <span>Duration: {formatDuration(chain.duration)}</span>
-              <span>SIGMA matches: {chain.sigmaMatches.length}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Format duration in human-readable form
-  const formatDuration = (ms: number): string => {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${Math.round(ms / 1000)}s`;
-    if (ms < 3600000) return `${Math.round(ms / 60000)}m`;
-    return `${Math.round(ms / 3600000)}h`;
-  };
-
   // Render timeline mini-chart
   const renderTimeline = () => {
     if (!searchResult || searchResult.timelineData.length === 0) return null;
@@ -423,17 +345,6 @@ export function IOCPivotView({
             By Event Type
             {searchResult && <span className="pivot-tab-count">{searchResult.eventsByType.size}</span>}
           </button>
-          {correlationChains && (
-            <button
-              className={`pivot-tab ${activeTab === 'chains' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chains')}
-            >
-              Chains
-              {searchResult && (
-                <span className="pivot-tab-count">{searchResult.relatedChainIds.length}</span>
-              )}
-            </button>
-          )}
         </div>
 
         {/* Content */}
@@ -448,7 +359,6 @@ export function IOCPivotView({
               {activeTab === 'all' && renderAllEvents()}
               {activeTab === 'byFile' && renderByFile()}
               {activeTab === 'byType' && renderByType()}
-              {activeTab === 'chains' && renderChains()}
             </>
           )}
         </div>

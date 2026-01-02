@@ -4,7 +4,6 @@
  */
 
 import { LogEntry } from '../types';
-import { CorrelatedChain } from './correlationEngine';
 import { SigmaRuleMatch } from './sigma/types';
 
 // IOC types supported by the search engine
@@ -21,7 +20,6 @@ export interface IOCSearchResult {
   eventsByType: Map<string, IOCEventMatch[]>;  // Grouped by EventID-Channel
   events: IOCEventMatch[];
   timelineData: IOCTimelinePoint[];
-  relatedChainIds: string[];
   firstSeen: Date | null;
   lastSeen: Date | null;
 }
@@ -307,34 +305,9 @@ export function searchIOCInEvents(
     eventsByType,
     events,
     timelineData: buildTimelineData(events),
-    relatedChainIds: [], // Populated separately if chains provided
     firstSeen,
     lastSeen,
   };
-}
-
-/**
- * Find correlation chains that contain events with the specified IOC
- */
-export function findChainsContainingIOC(
-  ioc: string,
-  type: IOCType,
-  chains: CorrelatedChain[]
-): string[] {
-  const chainIds: string[] = [];
-
-  for (const chain of chains) {
-    // Check each event in the chain for the IOC
-    for (const event of chain.events) {
-      const matchedFields = findIOCInEvent(event, ioc, type);
-      if (matchedFields.length > 0) {
-        chainIds.push(chain.id);
-        break; // Found in this chain, move to next
-      }
-    }
-  }
-
-  return chainIds;
 }
 
 /**
