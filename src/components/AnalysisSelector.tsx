@@ -271,6 +271,23 @@ export default function AnalysisSelector({
           </div>
           <div className="card-arrow">→</div>
         </a>
+
+        {/* Support Button */}
+        <a
+          href="https://ko-fi.com/koifsec"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`analysis-card support ${hoveredCard === 'support' ? 'hovered' : ''}`}
+          onMouseEnter={() => setHoveredCard('support')}
+          onMouseLeave={() => setHoveredCard(null)}
+        >
+          <div className="card-icon">☕</div>
+          <div className="card-content">
+            <h3>Support Development</h3>
+            <p>Buy me a coffee to support ongoing development and new features.</p>
+          </div>
+          <div className="card-arrow">→</div>
+        </a>
       </div>
 
       <div className="privacy-note">

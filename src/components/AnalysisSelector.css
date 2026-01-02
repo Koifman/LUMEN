@@ -282,6 +282,18 @@
   text-decoration: none;
 }
 
+.analysis-card.support {
+  border-color: #f59e0b;
+  text-decoration: none;
+}
+
+.analysis-card.support:hover,
+.analysis-card.support.hovered {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  text-decoration: none;
+}
+
 .feedback-close-btn {
   position: absolute;
   top: 0.5rem;
