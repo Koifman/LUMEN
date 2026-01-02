@@ -72,6 +72,15 @@ export default function AnalysisSelector({
           <p className="tagline">Your EVTX companion</p>
         </div>
         <div className="header-actions">
+          <a
+            href="https://ko-fi.com/koifsec"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="support-button"
+            title="Support Development"
+          >
+            ☕ Support
+          </a>
           <button className="export-button" onClick={() => setShowExportReport(true)}>
             Export Report
           </button>

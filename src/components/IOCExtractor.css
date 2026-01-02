@@ -626,3 +626,28 @@
   background: var(--bg-hover);
   color: var(--text-muted);
 }
+
+/* Pivot Button */
+.pivot-btn {
+  background: linear-gradient(135deg, #2d5a9e, #3d6ab5);
+  color: white;
+  border: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pivot-btn:hover {
+  background: linear-gradient(135deg, #3d6ab5, #4d7ac5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(45, 90, 158, 0.3);
+}
+
+.pivot-btn:active {
+  transform: translateY(0);
+}

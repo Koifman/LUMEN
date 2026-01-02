@@ -45,6 +45,12 @@ function App() {
     return !hasSeenFeatures;
   });
 
+  const [showIOCPivotAnnouncement, setShowIOCPivotAnnouncement] = useState(() => {
+    // Show IOC Pivot announcement only once
+    const hasSeenIOCPivot = localStorage.getItem('hasSeenIOCPivotAnnouncement');
+    return !hasSeenIOCPivot;
+  });
+
   // Create SIGMA engine instance (persists across renders)
   const sigmaEngine = useMemo(() => {
     return createSigmaEngine({
@@ -274,6 +280,7 @@ function App() {
           <LazyIOCExtractor
             entries={parsedData.entries}
             onBack={handleBackToSelector}
+            sigmaMatches={sigmaMatches}
           />
         </Suspense>
       </AnalysisErrorBoundary>
@@ -403,6 +410,40 @@ function App() {
               setShowFeaturesAnnouncement(false);
               localStorage.setItem('hasSeenFeaturesV1', 'true');
             }}>Awesome, let's try them!</button>
+          </div>
+        </div>
+      )}
+
+      {showIOCPivotAnnouncement && (
+        <div className="feedback-modal-backdrop" onClick={() => {
+          setShowIOCPivotAnnouncement(false);
+          localStorage.setItem('hasSeenIOCPivotAnnouncement', 'true');
+        }}>
+          <div className="feedback-modal features-announcement" onClick={e => e.stopPropagation()}>
+            <h3>🔍 New: IOC Pivot Analysis</h3>
+            <p>
+              Turn your IOC extraction into a powerful investigation hub!
+            </p>
+            <div className="features-list">
+              <div className="feature-item">
+                <div className="feature-icon">🎯</div>
+                <div className="feature-content">
+                  <strong>Cross-Event Search</strong>
+                  <p>Click "Pivot" on any extracted IOC to search all loaded events. See every occurrence with file breakdown, event type grouping, and timeline visualization.</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">⚡</div>
+                <div className="feature-content">
+                  <strong>SIGMA Integration</strong>
+                  <p>Events with SIGMA detections show detailed matched fields, rule descriptions, and severity levels. Non-SIGMA events display raw log data for quick analysis.</p>
+                </div>
+              </div>
+            </div>
+            <button className="feedback-close features-close-btn" onClick={() => {
+              setShowIOCPivotAnnouncement(false);
+              localStorage.setItem('hasSeenIOCPivotAnnouncement', 'true');
+            }}>Got it, let me try!</button>
           </div>
         </div>
       )}

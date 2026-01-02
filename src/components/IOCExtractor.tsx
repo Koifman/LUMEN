@@ -1,11 +1,14 @@
 import { useMemo, useState, useCallback } from 'react';
 import { LogEntry } from '../types';
 import { lookupIOC, VTResponse, getAPIKey, saveAPIKey, clearAPIKey } from '../lib/virusTotal';
+import { SigmaRuleMatch } from '../lib/sigma/types';
+import { IOCPivotView } from './IOCPivotView';
 import './IOCExtractor.css';
 
 interface IOCExtractorProps {
   entries: LogEntry[];
   onBack: () => void;
+  sigmaMatches?: Map<string, SigmaRuleMatch[]>;
 }
 
 // IOC types
@@ -202,7 +205,7 @@ const BENIGN_PATHS = [
   '/sbin'
 ];
 
-export default function IOCExtractor({ entries, onBack }: IOCExtractorProps) {
+export default function IOCExtractor({ entries, onBack, sigmaMatches }: IOCExtractorProps) {
   const [selectedTypes, setSelectedTypes] = useState<Set<IOCType>>(
     new Set(['ip', 'domain', 'hash', 'filepath', 'url', 'email', 'registry', 'base64'])
   );
@@ -217,6 +220,9 @@ export default function IOCExtractor({ entries, onBack }: IOCExtractorProps) {
   const [vtLookupQueue, setVtLookupQueue] = useState<string[]>([]);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const hasVtKey = vtApiKey.trim().length > 0;
+
+  // Pivot functionality state
+  const [pivotIOC, setPivotIOC] = useState<ExtractedIOC | null>(null);
 
   // Limit processing to first 50K events to avoid crashing on very large files
   const limitedEntries = useMemo(() => entries.slice(0, 50000), [entries]);
@@ -664,6 +670,15 @@ export default function IOCExtractor({ entries, onBack }: IOCExtractorProps) {
                         </a>
                       )}
 
+                      {/* Pivot button */}
+                      <button
+                        className="pivot-btn"
+                        onClick={() => setPivotIOC(ioc)}
+                        title={`Search all events for ${ioc.value}`}
+                      >
+                        Pivot
+                      </button>
+
                       <button
                         className={`copy-btn ${copiedIOC === ioc.value ? 'copied' : ''}`}
                         onClick={() => copyIOC(ioc.value)}
@@ -700,6 +715,17 @@ export default function IOCExtractor({ entries, onBack }: IOCExtractorProps) {
       <div className="privacy-note">
         🔒 All extraction is performed locally in your browser. No data is sent anywhere.
       </div>
+
+      {/* IOC Pivot Modal */}
+      {pivotIOC && (
+        <IOCPivotView
+          ioc={pivotIOC.value}
+          type={pivotIOC.type}
+          entries={entries}
+          sigmaMatches={sigmaMatches || new Map()}
+          onClose={() => setPivotIOC(null)}
+        />
+      )}
     </div>
   );
 }
