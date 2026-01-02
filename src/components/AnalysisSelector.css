@@ -47,6 +47,29 @@
   align-items: center;
 }
 
+.support-button {
+  padding: 0.75rem 1.25rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.support-button:hover {
+  background: rgba(245, 158, 11, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+
 .export-button {
   padding: 0.75rem 1.25rem;
   background: var(--accent-green-bg);
@@ -282,18 +305,6 @@
   text-decoration: none;
 }
 
-.analysis-card.support {
-  border-color: #f59e0b;
-  text-decoration: none;
-}
-
-.analysis-card.support:hover,
-.analysis-card.support.hovered {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: #f59e0b;
-  text-decoration: none;
-}
-
 .feedback-close-btn {
   position: absolute;
   top: 0.5rem;
@@ -524,10 +535,13 @@
     flex-direction: column;
   }
 
+  .support-button,
+  .export-button,
   .sessions-button,
   .reset-button {
     width: 100%;
     text-align: center;
+    justify-content: center;
   }
 
   .file-info {

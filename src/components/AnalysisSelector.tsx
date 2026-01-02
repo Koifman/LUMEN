@@ -72,6 +72,15 @@ export default function AnalysisSelector({
           <p className="tagline">Your EVTX companion</p>
         </div>
         <div className="header-actions">
+          <a
+            href="https://ko-fi.com/koifsec"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="support-button"
+            title="Support Development"
+          >
+            ☕ Support
+          </a>
           <button className="export-button" onClick={() => setShowExportReport(true)}>
             Export Report
           </button>
@@ -268,23 +277,6 @@ export default function AnalysisSelector({
           <div className="card-content">
             <h3>Submit Bugs/Features</h3>
             <p>Report bugs, request features, or provide feedback on GitHub.</p>
-          </div>
-          <div className="card-arrow">→</div>
-        </a>
-
-        {/* Support Button */}
-        <a
-          href="https://ko-fi.com/koifsec"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`analysis-card support ${hoveredCard === 'support' ? 'hovered' : ''}`}
-          onMouseEnter={() => setHoveredCard('support')}
-          onMouseLeave={() => setHoveredCard(null)}
-        >
-          <div className="card-icon">☕</div>
-          <div className="card-content">
-            <h3>Support Development</h3>
-            <p>Buy me a coffee to support ongoing development and new features.</p>
           </div>
           <div className="card-arrow">→</div>
         </a>
