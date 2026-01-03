@@ -142,6 +142,10 @@ export function applyModifier(
       // Wide character (null-byte separated)
       return checkWideChar(fieldStr, targetStr);
 
+    case 'cidr':
+      // CIDR notation matching for IP addresses
+      return matchCIDR(fieldStr, targetValue);
+
     case 'exists':
       // Field exists (any non-null value)
       return true;
@@ -183,6 +187,7 @@ export function parseFieldModifier(fieldName: string): {
     'utf16le',
     'utf16be',
     'wide',
+    'cidr',
     'exists'
   ];
 
@@ -270,6 +275,217 @@ function checkWideChar(fieldValue: string, target: string): boolean {
 }
 
 /**
+ * Match IP address against CIDR notation
+ * Supports both IPv4 and IPv6 CIDR ranges
+ * Can match against single CIDR string or array of CIDR strings
+ */
+function matchCIDR(ipAddress: string, cidrValue: any): boolean {
+  // Handle array of CIDR ranges
+  if (Array.isArray(cidrValue)) {
+    return cidrValue.some(cidr => matchSingleCIDR(ipAddress, String(cidr)));
+  }
+
+  // Handle single CIDR range
+  return matchSingleCIDR(ipAddress, String(cidrValue));
+}
+
+/**
+ * Match IP address against single CIDR notation
+ */
+function matchSingleCIDR(ipAddress: string, cidr: string): boolean {
+  // Trim whitespace
+  ipAddress = ipAddress.trim();
+  cidr = cidr.trim();
+
+  // Skip invalid/empty values
+  if (!ipAddress || ipAddress === '-' || !cidr) {
+    return false;
+  }
+
+  // Detect IPv6 vs IPv4 by presence of colon
+  if (ipAddress.includes(':') || cidr.includes(':')) {
+    return matchIPv6CIDR(ipAddress, cidr);
+  } else {
+    return matchIPv4CIDR(ipAddress, cidr);
+  }
+}
+
+/**
+ * Match IPv4 address against CIDR notation
+ * e.g., "192.168.1.1" matches "192.168.0.0/16"
+ */
+function matchIPv4CIDR(ip: string, cidr: string): boolean {
+  try {
+    // Parse CIDR notation
+    const [network, prefixStr] = cidr.split('/');
+    const prefix = parseInt(prefixStr, 10);
+
+    if (isNaN(prefix) || prefix < 0 || prefix > 32) {
+      return false;
+    }
+
+    // Convert IP addresses to 32-bit integers
+    const ipInt = ipv4ToInt(ip);
+    const networkInt = ipv4ToInt(network);
+
+    if (ipInt === null || networkInt === null) {
+      return false;
+    }
+
+    // Create netmask
+    const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+
+    // Check if IP is in network range
+    return (ipInt & mask) === (networkInt & mask);
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Convert IPv4 address string to 32-bit integer
+ */
+function ipv4ToInt(ip: string): number | null {
+  try {
+    const parts = ip.split('.').map(p => parseInt(p, 10));
+
+    if (parts.length !== 4) {
+      return null;
+    }
+
+    if (parts.some(p => isNaN(p) || p < 0 || p > 255)) {
+      return null;
+    }
+
+    return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Match IPv6 address against CIDR notation
+ * e.g., "fe80::1" matches "fe80::/10"
+ */
+function matchIPv6CIDR(ip: string, cidr: string): boolean {
+  try {
+    // Parse CIDR notation
+    const [network, prefixStr] = cidr.split('/');
+    const prefix = parseInt(prefixStr, 10);
+
+    if (isNaN(prefix) || prefix < 0 || prefix > 128) {
+      return false;
+    }
+
+    // Expand both addresses to full form
+    const ipExpanded = expandIPv6(ip);
+    const networkExpanded = expandIPv6(network);
+
+    if (!ipExpanded || !networkExpanded) {
+      return false;
+    }
+
+    // Convert to arrays of 16-bit segments
+    const ipSegments = ipv6ToSegments(ipExpanded);
+    const networkSegments = ipv6ToSegments(networkExpanded);
+
+    if (!ipSegments || !networkSegments) {
+      return false;
+    }
+
+    // Compare segments based on prefix length
+    let bitsRemaining = prefix;
+    for (let i = 0; i < 8 && bitsRemaining > 0; i++) {
+      const bitsToCheck = Math.min(16, bitsRemaining);
+      const mask = (0xffff << (16 - bitsToCheck)) & 0xffff;
+
+      if ((ipSegments[i] & mask) !== (networkSegments[i] & mask)) {
+        return false;
+      }
+
+      bitsRemaining -= bitsToCheck;
+    }
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Expand IPv6 address to full form (no :: notation)
+ */
+function expandIPv6(ip: string): string | null {
+  try {
+    // Handle IPv4-mapped IPv6 addresses (e.g., ::ffff:192.168.1.1)
+    if (ip.includes('.')) {
+      const parts = ip.split(':');
+      const ipv4Part = parts[parts.length - 1];
+      const ipv4Segments = ipv4Part.split('.');
+
+      if (ipv4Segments.length === 4) {
+        // Convert IPv4 to hex segments
+        const hex1 = (parseInt(ipv4Segments[0]) << 8 | parseInt(ipv4Segments[1])).toString(16).padStart(4, '0');
+        const hex2 = (parseInt(ipv4Segments[2]) << 8 | parseInt(ipv4Segments[3])).toString(16).padStart(4, '0');
+        ip = parts.slice(0, -1).join(':') + ':' + hex1 + ':' + hex2;
+      }
+    }
+
+    // Split by '::'
+    const parts = ip.split('::');
+
+    if (parts.length > 2) {
+      return null; // Invalid: multiple '::'
+    }
+
+    let segments: string[];
+
+    if (parts.length === 2) {
+      // Expand '::' notation
+      const leftSegments = parts[0] ? parts[0].split(':') : [];
+      const rightSegments = parts[1] ? parts[1].split(':') : [];
+      const missingSegments = 8 - leftSegments.length - rightSegments.length;
+
+      if (missingSegments < 0) {
+        return null;
+      }
+
+      const zeroSegments = Array(missingSegments).fill('0');
+      segments = [...leftSegments, ...zeroSegments, ...rightSegments];
+    } else {
+      // Already fully expanded
+      segments = parts[0].split(':');
+    }
+
+    if (segments.length !== 8) {
+      return null;
+    }
+
+    // Pad each segment to 4 hex digits
+    return segments.map(s => s.padStart(4, '0')).join(':');
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Convert expanded IPv6 address to array of 16-bit integer segments
+ */
+function ipv6ToSegments(expandedIp: string): number[] | null {
+  try {
+    const segments = expandedIp.split(':');
+
+    if (segments.length !== 8) {
+      return null;
+    }
+
+    return segments.map(s => parseInt(s, 16));
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Get all possible field names from a field specification
  * Handles modifiers and returns base field name
  */
@@ -314,6 +530,7 @@ export function isValidModifier(modifier: string): boolean {
     'utf16le',
     'utf16be',
     'wide',
+    'cidr',
     'exists'
   ];
 

@@ -179,3 +179,23 @@
 .sample-selector-footer a:hover {
   text-decoration: underline;
 }
+
+.sample-selector-footer .total-samples {
+  color: #8888a0;
+}
+
+.error-message, .loading-message {
+  padding: 2rem;
+  text-align: center;
+  color: #8888a0;
+}
+
+.error-message {
+  color: #ef4444;
+}
+
+.category-count {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-left: 0.25rem;
+}
