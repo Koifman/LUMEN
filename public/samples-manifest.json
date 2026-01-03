@@ -1,0 +1,1406 @@
+{
+  "categories": [
+    {
+      "name": "AutomatedTestingTools",
+      "description": "Automated testing tool outputs",
+      "sampleCount": 3,
+      "samples": [
+        {
+          "name": "Panache Sysmon Vs Edrtestingscript",
+          "file": "panache_sysmon_vs_EDRTestingScript.evtx",
+          "category": "AutomatedTestingTools"
+        },
+        {
+          "name": "Panachesysmon Vs Atomicredteam01",
+          "file": "PanacheSysmon_vs_AtomicRedTeam01.evtx",
+          "category": "AutomatedTestingTools"
+        },
+        {
+          "name": "Windefender Events 1117 1116 Atomicredteam",
+          "file": "WinDefender_Events_1117_1116_AtomicRedTeam.evtx",
+          "category": "AutomatedTestingTools"
+        }
+      ]
+    },
+    {
+      "name": "Command and Control",
+      "description": "C2 communications and tunneling",
+      "sampleCount": 6,
+      "samples": [
+        {
+          "name": "Bits Openvpn",
+          "file": "bits_openvpn.evtx",
+          "category": "Command and Control"
+        },
+        {
+          "name": "DE RDP Tunnel 5156",
+          "file": "DE_RDP_Tunnel_5156.evtx",
+          "category": "Command and Control"
+        },
+        {
+          "name": "DE RDP Tunneling 4624",
+          "file": "DE_RDP_Tunneling_4624.evtx",
+          "category": "Command and Control"
+        },
+        {
+          "name": "DE RDP Tunneling Terminalservices-remoteconnectionmanageroperational 1149",
+          "file": "DE_RDP_Tunneling_TerminalServices-RemoteConnectionManagerOperational_1149.evtx",
+          "category": "Command and Control"
+        },
+        {
+          "name": "DE Sysmon-3-rdp-tun",
+          "file": "DE_sysmon-3-rdp-tun.evtx",
+          "category": "Command and Control"
+        },
+        {
+          "name": "Tunna Iis Rdp Smb Tunneling Sysmon 3",
+          "file": "tunna_iis_rdp_smb_tunneling_sysmon_3.evtx",
+          "category": "Command and Control"
+        }
+      ]
+    },
+    {
+      "name": "Credential Access",
+      "description": "Credential dumping and password attacks",
+      "sampleCount": 39,
+      "samples": [
+        {
+          "name": "4794 DSRM Password Change T1098",
+          "file": "4794_DSRM_password_change_t1098.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "ACL Forcepwd Spnadd User Computer Accounts",
+          "file": "ACL_ForcePwd_SPNAdd_User_Computer_Accounts.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Babyshark Mimikatz Powershell",
+          "file": "babyshark_mimikatz_powershell.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA 4624 4625 Logontype2 Logonproc Chrome",
+          "file": "CA_4624_4625_LogonType2_LogonProc_chrome.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Chrome Firefox Opera 4663",
+          "file": "CA_chrome_firefox_opera_4663.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Dcsync 4662",
+          "file": "CA_DCSync_4662.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Hashdump 4663 4656 Lsass Access",
+          "file": "CA_hashdump_4663_4656_lsass_access.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Keefarce Keepass Credump",
+          "file": "CA_keefarce_keepass_credump.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Keepass Keethief Get-keepassdatabasekey",
+          "file": "CA_keepass_KeeThief_Get-KeePassDatabaseKey.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Mimikatz Memssp Default Logs Sysmon 11",
+          "file": "CA_Mimikatz_Memssp_Default_Logs_Sysmon_11.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Petipotam Etw Rpc Efsr 5 6",
+          "file": "CA_PetiPotam_etw_rpc_efsr_5_6.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Protectedstorage 5145 Rpc Masterkey",
+          "file": "CA_protectedstorage_5145_rpc_masterkey.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Sysmon Hashdump Cmd Meterpreter",
+          "file": "CA_sysmon_hashdump_cmd_meterpreter.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "CA Teamviewer-dumper Sysmon 10",
+          "file": "CA_teamviewer-dumper_sysmon_10.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Dc Applog Ntdsutil Dfir 325 326 327",
+          "file": "dc_applog_ntdsutil_dfir_325_326_327.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Discovery Sysmon 1 Iis Pwd And Config Discovery Appcmd",
+          "file": "discovery_sysmon_1_iis_pwd_and_config_discovery_appcmd.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Etw Rpc Zerologon",
+          "file": "etw_rpc_zerologon.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Kerberos Pwd Spray 4771",
+          "file": "kerberos_pwd_spray_4771.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Lsasssilentprocessexit Process Exit Monitor 3001 Lsass",
+          "file": "LsassSilentProcessExit_process_exit_monitor_3001_lsass.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "MSSQL Multiple Failed Logon Eventid 18456",
+          "file": "MSSQL_multiple_failed_logon_EventID_18456.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Phish Windows Credentials Powershell Scriptblocklog 4104",
+          "file": "phish_windows_credentials_powershell_scriptblockLog_4104.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Powershell 4104 Minidumpwritedump Lsass",
+          "file": "Powershell_4104_MiniDumpWriteDump_Lsass.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Ppl Bypass Ppldump Knowdll Hijack Sysmon Security",
+          "file": "ppl_bypass_ppldump_knowdll_hijack_sysmon_security.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Remote Pwd Reset Rpc Mimikatz Postzerologon Target DC",
+          "file": "remote_pwd_reset_rpc_mimikatz_postzerologon_target_DC.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Remote Sam Registry Access Via Backup Operator Priv",
+          "file": "remote_sam_registry_access_via_backup_operator_priv.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 10 1 Memdump Comsvcs Minidump",
+          "file": "sysmon_10_1_memdump_comsvcs_minidump.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 10 11 Lsass Memdump",
+          "file": "sysmon_10_11_lsass_memdump.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 10 11 Outlfank Dumpert And Andrewspecial Memdump",
+          "file": "sysmon_10_11_outlfank_dumpert_and_andrewspecial_memdump.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 10 Lsass Mimikatz Sekurlsa Logonpasswords",
+          "file": "sysmon_10_lsass_mimikatz_sekurlsa_logonpasswords.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 13 Keylogger Directx",
+          "file": "sysmon_13_keylogger_directx.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 13 Local Admin Password Changed",
+          "file": "Sysmon_13_Local_Admin_Password_Changed.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 2x10 Lsass With Different Pid Rtlcreateprocessreflection",
+          "file": "sysmon_2x10_lsass_with_different_pid_RtlCreateProcessReflection.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon 3 10 Invoke-mimikatz Hosted Github",
+          "file": "sysmon_3_10_Invoke-Mimikatz_hosted_Github.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon Rdrleakdiag Lsass Dump",
+          "file": "sysmon_rdrleakdiag_lsass_dump.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon13 Machineaccount Password Hash Changed Via Lsarsetsecret",
+          "file": "Sysmon13_MachineAccount_Password_Hash_Changed_via_LsarSetSecret.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Sysmon17 18 Kekeo Tsssp Default Np",
+          "file": "sysmon17_18_kekeo_tsssp_default_np.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Tutto Malseclogon",
+          "file": "tutto_malseclogon.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Zerologon CVE-2020-1472 DFIR System Netlogon Error Eventid 5805",
+          "file": "Zerologon_CVE-2020-1472_DFIR_System_NetLogon_Error_EventID_5805.evtx",
+          "category": "Credential Access"
+        },
+        {
+          "name": "Zerologon Voidsec CVE-2020-1472 4626 LT3 Anonym Follwedby 4742 DC Anony DC",
+          "file": "Zerologon_VoidSec_CVE-2020-1472_4626_LT3_Anonym_follwedby_4742_DC_Anony_DC.evtx",
+          "category": "Credential Access"
+        }
+      ]
+    },
+    {
+      "name": "Defense Evasion",
+      "description": "Techniques to avoid detection",
+      "sampleCount": 36,
+      "samples": [
+        {
+          "name": "Apt10 Jjs Sideloading Prochollowing Persist As Service Sysmon 1 7 8 13",
+          "file": "apt10_jjs_sideloading_prochollowing_persist_as_service_sysmon_1_7_8_13.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE 104 System Log Cleared",
+          "file": "DE_104_system_log_cleared.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE 1102 Security Log Cleared",
+          "file": "DE_1102_security_log_cleared.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE BYOV Zam64 CA Memdump Sysmon 7 10",
+          "file": "DE_BYOV_Zam64_CA_Memdump_sysmon_7_10.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Eventlog Service Crashed",
+          "file": "DE_EventLog_Service_Crashed.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Fake Computeraccount 4720",
+          "file": "DE_Fake_ComputerAccount_4720.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Hiding Files Via Attrib Cmdlet",
+          "file": "de_hiding_files_via_attrib_cmdlet.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Kerneldebug And Testsigning ON Security 4826",
+          "file": "DE_KernelDebug_and_TestSigning_ON_Security_4826.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Portforward Netsh Rdp Sysmon 13 1",
+          "file": "de_portforward_netsh_rdp_sysmon_13_1.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Powershell CLM Disabled Sysmon 12",
+          "file": "DE_Powershell_CLM_Disabled_Sysmon_12.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Powershell Execpolicy Changed Sysmon 13",
+          "file": "de_powershell_execpolicy_changed_sysmon_13.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Processherpaderping Sysmon 11 10 1 7",
+          "file": "DE_ProcessHerpaderping_Sysmon_11_10_1_7.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Psscriptblocklogging Disabled Sysmon12 13",
+          "file": "de_PsScriptBlockLogging_disabled_sysmon12_13.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Remote Eventlog Svc Crash Byt3bl33d3r Sysmon 17 1 3",
+          "file": "DE_remote_eventlog_svc_crash_byt3bl33d3r_sysmon_17_1_3.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Renamed Psexec Service Sysmon 17 18",
+          "file": "DE_renamed_psexec_service_sysmon_17_18.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Suspicious Remote Eventlog Svc Access 5145",
+          "file": "DE_suspicious_remote_eventlog_svc_access_5145.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Sysmon 13 VBA Security Accessvbom",
+          "file": "de_sysmon_13_VBA_Security_AccessVBOM.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE UAC Disabled Sysmon 12 13",
+          "file": "DE_UAC_Disabled_Sysmon_12_13.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "De Unmanagedpowershell Psinject Sysmon 7 8 10",
+          "file": "de_unmanagedpowershell_psinject_sysmon_7_8_10.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Wineventlogsvc Crash System 7036",
+          "file": "DE_WinEventLogSvc_Crash_System_7036.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DE Xp Cmdshell Enabled MSSQL EID 15457",
+          "file": "DE_xp_cmdshell_enabled_MSSQL_EID_15457.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "DSE Bypass BYOV TDL Dummydriver Sysmon 6 7 13",
+          "file": "DSE_bypass_BYOV_TDL_dummydriver_sysmon_6_7_13.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Evasion Codeinj Odzhan Conhost Sysmon 10 1",
+          "file": "evasion_codeinj_odzhan_conhost_sysmon_10_1.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Evasion Codeinj Odzhan Spoolsv Sysmon 10 1",
+          "file": "evasion_codeinj_odzhan_spoolsv_sysmon_10_1.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Faxhell Sysmon 7 1 18 3 Bindshell Dllhijack",
+          "file": "faxhell_sysmon_7_1_18_3_bindshell_dllhijack.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Meterpreter Migrate To Explorer Sysmon 8",
+          "file": "meterpreter_migrate_to_explorer_sysmon_8.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Process Suspend Sysmon 10 Ga 800",
+          "file": "process_suspend_sysmon_10_ga_800.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sideloading Wwlib Sysmon 7 1 11",
+          "file": "sideloading_wwlib_sysmon_7_1_11.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 10 1 Ppid Spoofing",
+          "file": "sysmon_10_1_ppid_spoofing.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 10 Evasion Suspicious Ntopenprocess Calltrace",
+          "file": "Sysmon_10_Evasion_Suspicious_NtOpenProcess_CallTrace.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 12 DE Antiforensics MRU Deletekey",
+          "file": "Sysmon_12_DE_AntiForensics_MRU_DeleteKey.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 13 Rdp Settings Tampering",
+          "file": "sysmon_13_rdp_settings_tampering.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 2 11 Evasion Timestomp MACE",
+          "file": "sysmon_2_11_evasion_timestomp_MACE.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 7  Update Session Orchestrator Dll Hijack",
+          "file": "Sysmon 7  Update Session Orchestrator Dll Hijack.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Sysmon 7 Dllhijack Cdpsshims Cdpsvc",
+          "file": "Sysmon 7 dllhijack_cdpsshims_CDPSvc.evtx",
+          "category": "Defense Evasion"
+        },
+        {
+          "name": "Win 4985 T1186 Process Doppelganging",
+          "file": "Win_4985_T1186_Process_Doppelganging.evtx",
+          "category": "Defense Evasion"
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "description": "System and network discovery techniques",
+      "sampleCount": 11,
+      "samples": [
+        {
+          "name": "4799 Remote Local Groups Enumeration",
+          "file": "4799_remote_local_groups_enumeration.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Dicovery 4661 Net Group Domain Admins Target",
+          "file": "dicovery_4661_net_group_domain_admins_target.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Bloodhound",
+          "file": "discovery_bloodhound.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Enum Shares Target Sysmon 3 18",
+          "file": "discovery_enum_shares_target_sysmon_3_18.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Local User Or Group Windows Security 4799 4798",
+          "file": "discovery_local_user_or_group_windows_security_4799_4798.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Meterpreter Ps Cmd Process Listing Sysmon 10",
+          "file": "discovery_meterpreter_ps_cmd_process_listing_sysmon_10.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Psloggedon",
+          "file": "discovery_psloggedon.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Remote System Namedpipes Sysmon 18",
+          "file": "Discovery_Remote_System_NamedPipes_Sysmon_18.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Sysmon 18 Invoke Userhunter Netsessionenum Dc-srvsvc",
+          "file": "discovery_sysmon_18_Invoke_UserHunter_NetSessionEnum_DC-srvsvc.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery Sysmon 3 Invoke Userhunter Sourcemachine",
+          "file": "discovery_sysmon_3_Invoke_UserHunter_SourceMachine.evtx",
+          "category": "Discovery"
+        },
+        {
+          "name": "Discovery UEFI Settings Rweverything Sysmon 6",
+          "file": "discovery_UEFI_Settings_rweverything_sysmon_6.evtx",
+          "category": "Discovery"
+        }
+      ]
+    },
+    {
+      "name": "Execution",
+      "description": "Process execution and command line attacks",
+      "sampleCount": 34,
+      "samples": [
+        {
+          "name": "Evasion Execution Imageload Wuauclt Lolbas",
+          "file": "evasion_execution_imageload_wuauclt_lolbas.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Driveby Cve-2018-15982 Sysmon 1 10",
+          "file": "exec_driveby_cve-2018-15982_sysmon_1_10.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Msxsl Xsl Sysmon 1 7",
+          "file": "exec_msxsl_xsl_sysmon_1_7.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Persist Rundll32 Mshta Scheduledtask Sysmon 1 3 11",
+          "file": "exec_persist_rundll32_mshta_scheduledtask_sysmon_1_3_11.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 11 Lolbin Rundll32 Openurl Fileprotocolhandler",
+          "file": "exec_sysmon_1_11_lolbin_rundll32_openurl_FileProtocolHandler.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 11 Lolbin Rundll32 Shdocvw Openurl",
+          "file": "exec_sysmon_1_11_lolbin_rundll32_shdocvw_openurl.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 11 Lolbin Rundll32 Zipfldr Routethecall",
+          "file": "exec_sysmon_1_11_lolbin_rundll32_zipfldr_RouteTheCall.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 7 Jscript9 Defense Evasion",
+          "file": "exec_sysmon_1_7_jscript9_defense_evasion.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 Ftp",
+          "file": "exec_sysmon_1_ftp.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 Lolbin Pcalua",
+          "file": "exec_sysmon_1_lolbin_pcalua.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 Lolbin Renamed Regsvr32 Scrobj",
+          "file": "exec_sysmon_1_lolbin_renamed_regsvr32_scrobj.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 Lolbin Rundll32 Advpack Registerocx",
+          "file": "exec_sysmon_1_lolbin_rundll32_advpack_RegisterOCX.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon 1 Rundll32 Pcwutl Launchapplication",
+          "file": "exec_sysmon_1_rundll32_pcwutl_LaunchApplication.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon Lobin Regsvr32 Sct",
+          "file": "exec_sysmon_lobin_regsvr32_sct.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Sysmon Meterpreter Reversetcp Msipackage",
+          "file": "Exec_sysmon_meterpreter_reversetcp_msipackage.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Via Cpl Application Experience Eventid 17 Controlpanelapplet",
+          "file": "Exec_via_cpl_Application_Experience_EventID_17_ControlPanelApplet.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Exec Wmic Xsl Internet Sysmon 3 1 11",
+          "file": "exec_wmic_xsl_internet_sysmon_3_1_11.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Execution Evasion Visual Studio Prebuild Event",
+          "file": "execution_evasion_visual_studio_prebuild_event.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Revshell Cmd Svchost Sysmon 1",
+          "file": "revshell_cmd_svchost_sysmon_1.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Rogue Msi Url 1040 1042",
+          "file": "rogue_msi_url_1040_1042.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Susp Explorer Exec",
+          "file": "susp_explorer_exec.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Susp Explorer Exec Root Cmdline @rimpq @cyberraiju",
+          "file": "susp_explorer_exec_root_cmdline_@rimpq_@CyberRaiju.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon 1 11 Rundll32 Cpl Ostap",
+          "file": "sysmon_1_11_rundll32_cpl_ostap.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon 11 1 Lolbas Downldr Desktopimgdownldr",
+          "file": "sysmon_11_1_lolbas_downldr_desktopimgdownldr.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Exec Compiledhtml",
+          "file": "Sysmon_Exec_CompiledHTML.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Exec From Vss Persistence",
+          "file": "sysmon_exec_from_vss_persistence.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Lolbas Rundll32 Zipfldr Routethecall Shell",
+          "file": "sysmon_lolbas_rundll32_zipfldr_routethecall_shell.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Lolbin Bohops Vshadow Exec",
+          "file": "sysmon_lolbin_bohops_vshadow_exec.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Meterpreter Reflectivepeinjection To Notepad ",
+          "file": "Sysmon_meterpreter_ReflectivePEInjection_to_notepad_.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Mshta Sharpshooter Stageless Meterpreter",
+          "file": "sysmon_mshta_sharpshooter_stageless_meterpreter.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Vbs Sharpshooter Stageless Meterpreter",
+          "file": "sysmon_vbs_sharpshooter_stageless_meterpreter.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Sysmon Zipexec",
+          "file": "sysmon_zipexec.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Temp Scheduled Task 4698 4699",
+          "file": "temp_scheduled_task_4698_4699.evtx",
+          "category": "Execution"
+        },
+        {
+          "name": "Windows Bits 4 59 60 Lolbas Desktopimgdownldr",
+          "file": "windows_bits_4_59_60_lolbas desktopimgdownldr.evtx",
+          "category": "Execution"
+        }
+      ]
+    },
+    {
+      "name": "Lateral Movement",
+      "description": "Moving through the network",
+      "sampleCount": 47,
+      "samples": [
+        {
+          "name": "DFIR RDP Client Timezone Rdpcorets 104 Example",
+          "file": "DFIR_RDP_Client_TimeZone_RdpCoreTs_104_example.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Dfir Rdpsharp Target Rdpcorets 168 68 131",
+          "file": "dfir_rdpsharp_target_RdpCoreTs_168_68_131.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Impersonateuser-via Local Pass The Hash Sysmon And Security",
+          "file": "ImpersonateUser-via local Pass The Hash Sysmon and Security.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Lateral Movement Startup 3 11",
+          "file": "lateral_movement_startup_3_11.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM 4624 Mimikatz Sekurlsa Pth Source Machine",
+          "file": "LM_4624_mimikatz_sekurlsa_pth_source_machine.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM 5145 Remote Filecopy",
+          "file": "LM_5145_Remote_FileCopy.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Add New Namedpipe Tp Nullsession Registry Turla Like Ttp",
+          "file": "LM_add_new_namedpipe_tp_nullsession_registry_turla_like_ttp.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM DCOM MSHTA Lethalhta Sysmon 3 1",
+          "file": "LM_DCOM_MSHTA_LethalHTA_Sysmon_3_1.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Dcom Shwnd Shbrwnd Mmc20 Failed Traces System 10016",
+          "file": "LM_dcom_shwnd_shbrwnd_mmc20_failed_traces_system_10016.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Imageload NFSH Sysmon 7",
+          "file": "LM_ImageLoad_NFSH_Sysmon_7.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Impacket Docmexec Mmc Sysmon 01",
+          "file": "LM_impacket_docmexec_mmc_sysmon_01.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Newshare Added Sysmon 12 13",
+          "file": "LM_NewShare_Added_Sysmon_12_13.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Powershellremoting Sysmon 1 Wsmprovhost",
+          "file": "LM_PowershellRemoting_sysmon_1_wsmprovhost.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Regsvc Directoryserviceextpt Lsass NTDS Adamxpn",
+          "file": "LM_regsvc_DirectoryServiceExtPt_Lsass_NTDS_AdamXpn.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM REMCOM 5145 Targethost",
+          "file": "LM_REMCOM_5145_TargetHost.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Lm Remote Registry Sysmon 1 13 3",
+          "file": "lm_remote_registry_sysmon_1_13_3.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Remote Service01 5145 Svcctl",
+          "file": "LM_Remote_Service01_5145_svcctl.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Remote Service02 7045",
+          "file": "LM_Remote_Service02_7045.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Renamed Psexecsvc 5145",
+          "file": "LM_renamed_psexecsvc_5145.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Scheduledtask ATSVC Target Host",
+          "file": "LM_ScheduledTask_ATSVC_target_host.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Sysmon 1 12 13 3 Tsclient Sharprdp",
+          "file": "LM_sysmon_1_12_13_3_tsclient_SharpRdp.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Lm Sysmon 18 Remshell Over Namedpipe",
+          "file": "lm_sysmon_18_remshell_over_namedpipe.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Sysmon 3 12 13 1 Sharprdp",
+          "file": "LM_sysmon_3_12_13_1_SharpRDP.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Sysmon 3 DCOM Shellbrowserwindow Shellwindows",
+          "file": "LM_sysmon_3_DCOM_ShellBrowserWindow_ShellWindows.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Sysmon Psexec Smb Meterpreter",
+          "file": "LM_sysmon_psexec_smb_meterpreter.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Sysmon Remote Task Src Powershell",
+          "file": "LM_sysmon_remote_task_src_powershell.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Tsclient Startup Folder",
+          "file": "LM_tsclient_startup_folder.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Typical IIS Webshell Sysmon 1 10 Traces",
+          "file": "LM_typical_IIS_webshell_sysmon_1_10_traces.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Winrm Exec Sysmon 1 Winrshost",
+          "file": "LM_winrm_exec_sysmon_1_winrshost.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Winrm Target Wrmlogs 91 Wsmanshellstarted Poorlog",
+          "file": "LM_winrm_target_wrmlogs_91_wsmanShellStarted_poorLog.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM WMI 4624 4688 Targethost",
+          "file": "LM_WMI_4624_4688_TargetHost.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Wmi Poisonhandler Mr-un1k0d3r Sysmon 1 13",
+          "file": "LM_wmi_PoisonHandler_Mr-Un1k0d3r_sysmon_1_13.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM WMIC 4648 Rpcss",
+          "file": "LM_WMIC_4648_rpcss.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Wmiexec Impacket Sysmon Whoami",
+          "file": "LM_wmiexec_impacket_sysmon_whoami.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "LM Xp Cmdshell MSSQL Events",
+          "file": "LM_xp_cmdshell_MSSQL_Events.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "MSSQL 15281 Xp Cmdshell Exec Failed Attempt",
+          "file": "MSSQL_15281_xp_cmdshell_exec_failed_attempt.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Net Share Drive 5142",
+          "file": "net_share_drive_5142.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Powercat Revshell Sysmon 1 3",
+          "file": "powercat_revShell_sysmon_1_3.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Remote File Copy System Proc File Write Sysmon 11",
+          "file": "remote_file_copy_system_proc_file_write_sysmon_11.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Remote Task Update 4624 4702 Same Logonid",
+          "file": "remote task update 4624 4702 same logonid.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Remotepowershell MS Windows-remote Management Eventid 169",
+          "file": "RemotePowerShell_MS_Windows-Remote_Management_EventID_169.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Sharprdp Sysmon 7 Mstscax.dll",
+          "file": "sharprdp_sysmon_7_mstscax.dll.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Smb Bi Auth Conn Spoolsample",
+          "file": "smb_bi_auth_conn_spoolsample.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Smbmap Upload Exec Sysmon",
+          "file": "smbmap_upload_exec_sysmon.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Spoolsample 5145",
+          "file": "spoolsample_5145.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Sysmon 1 Exec Via Sql Xpcmdshell",
+          "file": "sysmon_1_exec_via_sql_xpcmdshell.evtx",
+          "category": "Lateral Movement"
+        },
+        {
+          "name": "Wmi Remote Registry Sysmon",
+          "file": "wmi_remote_registry_sysmon.evtx",
+          "category": "Lateral Movement"
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "description": "Miscellaneous attack samples",
+      "sampleCount": 2,
+      "samples": [
+        {
+          "name": "Maldoc Mshta Via Shellbrowserwind Rundll32",
+          "file": "maldoc_mshta_via_shellbrowserwind_rundll32.evtx",
+          "category": "Other"
+        },
+        {
+          "name": "Rdpcorets 148 Mst120 Bluekeep Rpdscan Full",
+          "file": "rdpcorets_148_mst120_bluekeep_rpdscan_full.evtx",
+          "category": "Other"
+        }
+      ]
+    },
+    {
+      "name": "Persistence",
+      "description": "Techniques for maintaining access",
+      "sampleCount": 22,
+      "samples": [
+        {
+          "name": "DACL Dcsync Right Powerview  Add-domainobjectacl",
+          "file": "DACL_DCSync_Right_Powerview_ Add-DomainObjectAcl.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Evasion Persis Hidden Run Keyvalue Sysmon 13",
+          "file": "evasion_persis_hidden_run_keyvalue_sysmon_13.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Network Service Guest Added To Admins 4732",
+          "file": "Network_Service_Guest_added_to_admins_4732.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persist Bitsadmin Microsoft-windows-bits-client-operational",
+          "file": "persist_bitsadmin_Microsoft-Windows-Bits-Client-Operational.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persist Firefox Comhijack Sysmon 11 13 7 1",
+          "file": "persist_firefox_comhijack_sysmon_11_13_7_1.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persist Turla Outlook Backdoor Comhijack",
+          "file": "persist_turla_outlook_backdoor_comhijack.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persist Valid Account Guest Rid Hijack",
+          "file": "persist_valid_account_guest_rid_hijack.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Accessibility Features Osk Sysmon1",
+          "file": "persistence_accessibility_features_osk_sysmon1.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Hidden Local Account Sysmon",
+          "file": "persistence_hidden_local_account_sysmon.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Pendinggpo Sysmon 13",
+          "file": "persistence_pendingGPO_sysmon_13.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Security Dcshadow 4742",
+          "file": "persistence_security_dcshadow_4742.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Shime Microsoft-windows-application-experience Program-telemetry 500",
+          "file": "Persistence_Shime_Microsoft-Windows-Application-Experience_Program-Telemetry_500.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Silentprocessexit Imagehijack Sysmon 13 1",
+          "file": "persistence_SilentProcessExit_ImageHijack_sysmon_13_1.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Startup Usershellstartup Folder Changed Sysmon 13",
+          "file": "persistence_startup_UserShellStartup_Folder_Changed_sysmon_13.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Sysmon 11 13 1 Shime Appfix",
+          "file": "persistence_sysmon_11_13_1_shime_appfix.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Persistence Winsock Catalog Change Eventid 1",
+          "file": "Persistence_Winsock_Catalog Change EventId_1.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Sysmon 1 Persist Bitsjob Setnotifycmdline",
+          "file": "sysmon_1_persist_bitsjob_SetNotifyCmdLine.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Sysmon 1 Smss Child Proc Bootexecute Setupexecute",
+          "file": "sysmon_1_smss_child_proc_bootexecute_setupexecute.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Sysmon 13 1 Persistence Via Winlogon Shell",
+          "file": "sysmon_13_1_persistence_via_winlogon_shell.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Sysmon 20 21 1 Commandlineeventconsumer",
+          "file": "sysmon_20_21_1_CommandLineEventConsumer.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Sysmon Local Account Creation And Added Admingroup 12 13",
+          "file": "sysmon_local_account_creation_and_added_admingroup_12_13.evtx",
+          "category": "Persistence"
+        },
+        {
+          "name": "Wmighost Sysmon 20 21 1",
+          "file": "wmighost_sysmon_20_21_1.evtx",
+          "category": "Persistence"
+        }
+      ]
+    },
+    {
+      "name": "Privilege Escalation",
+      "description": "Techniques to gain higher privileges",
+      "sampleCount": 66,
+      "samples": [
+        {
+          "name": "4624 LT3 Anonymouslogon Localhost - Juicypotato",
+          "file": "4624 LT3 AnonymousLogon Localhost - JuicyPotato.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "4765 Sidhistory Add T1178",
+          "file": "4765_sidhistory_add_t1178.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "CVE-2020-0796 Smbv3ghost Localprivesc Sysmon 3 1 10",
+          "file": "CVE-2020-0796_SMBV3Ghost_LocalPrivEsc_Sysmon_3_1_10.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Efspotato Sysmon 17 18 Privesc Seimpersonate To System",
+          "file": "EfsPotato_sysmon_17_18_privesc_seimpersonate_to_system.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Eop Appcontainer Il Broker Filewrite",
+          "file": "eop_appcontainer_il_broker_filewrite.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Invoke Tokenduplication UAC Bypass4624",
+          "file": "Invoke_TokenDuplication_UAC_Bypass4624.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Ntlm2selfrelay-med0x2e-security 4624 4688",
+          "file": "NTLM2SelfRelay-med0x2e-security_4624_4688.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc CVE-2020-1313 Sysmon 13 Uscheduler Cmdline",
+          "file": "PrivEsc_CVE-2020-1313_Sysmon_13_UScheduler_Cmdline.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Imperson Netsvc To Sys Decoder Sysmon 1 17 18",
+          "file": "PrivEsc_Imperson_NetSvc_to_Sys_Decoder_Sysmon_1_17_18.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Krbrelayup Windows 4624",
+          "file": "privesc_KrbRelayUp_windows_4624.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Netsvc Sessiontoken Retrival Via Localsmb Auth 5145",
+          "file": "PrivEsc_NetSvc_SessionToken_Retrival_via_localSMB_Auth_5145.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Registry Symlink CVE-2020-1377",
+          "file": "privesc_registry_symlink_CVE-2020-1377.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Roguepotato Sysmon 17 18",
+          "file": "privesc_roguepotato_sysmon_17_18.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Rotten Potato From Webshell Metasploit Sysmon 1 8 3",
+          "file": "privesc_rotten_potato_from_webshell_metasploit_sysmon_1_8_3.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Seimpersonate Tosys Spoolsv Sysmon 17 18",
+          "file": "privesc_seimpersonate_tosys_spoolsv_sysmon_17_18.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Seimpersonatepriv Enabled Back For Upnp Localsvc 4698",
+          "file": "PrivEsc_SeImpersonatePriv_enabled_back_for_upnp_localsvc_4698.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Spoolfool Mahdihtm Sysmon 1 11 7 13",
+          "file": "privesc_spoolfool_mahdihtm_sysmon_1_11_7_13.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Spoolsv Spl File Write Sysmon11",
+          "file": "privesc_spoolsv_spl_file_write_sysmon11.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Sysmon Cve 20201030 Spooler",
+          "file": "privesc_sysmon_cve_20201030_spooler.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privesc Unquoted Svc Sysmon 1 11",
+          "file": "privesc_unquoted_svc_sysmon_1_11.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Privexchange Dirkjan",
+          "file": "privexchange_dirkjan.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Roguewinrm",
+          "file": "RogueWinRM.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Runas 4624 4648 Webshell Createprocessasusera",
+          "file": "Runas_4624_4648_Webshell_CreateProcessAsUserA.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Samaccount Spoofing CVE-2021-42287 CVE-2021-42278 DC Securitylogs",
+          "file": "samaccount_spoofing_CVE-2021-42287_CVE-2021-42278_DC_securitylogs.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Security 4624 4673 Token Manip",
+          "file": "security_4624_4673_token_manip.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 11 Exec As System Via Schedtask",
+          "file": "sysmon_1_11_exec_as_system_via_schedtask.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 13 11 Cmstp Ini Uacbypass",
+          "file": "sysmon_1_13_11_cmstp_ini_uacbypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 13 Uacbypass Apppath Control",
+          "file": "sysmon_1_13_UACBypass_AppPath_Control.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 7 11 Mcx2prov Uacbypass",
+          "file": "sysmon_1_7_11_mcx2prov_uacbypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 7 11 Migwiz",
+          "file": "sysmon_1_7_11_migwiz.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 7 11 Sysprep Uacbypass",
+          "file": "sysmon_1_7_11_sysprep_uacbypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 1 7 Elevate Uacbypass Sysprep",
+          "file": "sysmon_1_7_elevate_uacbypass_sysprep.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 11 1 15 Wscriptbypassuac",
+          "file": "sysmon_11_1_15_WScriptBypassUAC.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 11 1 7 Uacbypass Cliconfg",
+          "file": "sysmon_11_1_7_uacbypass_cliconfg.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 11 7 1 Uacbypass Windirectory Mocking",
+          "file": "sysmon_11_7_1_uacbypass_windirectory_mocking.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 13 1 12 11 Perfmonuacbypass",
+          "file": "sysmon_13_1_12_11_perfmonUACBypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 13 1 Compmgmtlauncheruacbypass",
+          "file": "sysmon_13_1_compmgmtlauncherUACBypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 13 1 Meterpreter Getsystem Namedpipeimpersonation",
+          "file": "sysmon_13_1_meterpreter_getsystem_NamedPipeImpersonation.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 13 1 UAC Bypass Eventvwrbypass",
+          "file": "Sysmon_13_1_UAC_Bypass_EventVwrBypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon 13 1 Uacbypass Sdcltbypass",
+          "file": "Sysmon_13_1_UACBypass_SDCLTBypass.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon Privesc From Admin To System Handle Inheritance",
+          "file": "sysmon_privesc_from_admin_to_system_handle_inheritance.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon Privesc Psexec Dwell",
+          "file": "sysmon_privesc_psexec_dwell.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon Uacbypass Cdssync Schtask Hijack Byeintegrity5",
+          "file": "sysmon_uacbypass_CDSSync_schtask_hijack_byeintegrity5.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 22",
+          "file": "Sysmon_UACME_22.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 23",
+          "file": "Sysmon_UACME_23.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 30",
+          "file": "Sysmon_UACME_30.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 32",
+          "file": "Sysmon_UACME_32.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 33",
+          "file": "Sysmon_UACME_33.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 34",
+          "file": "Sysmon_UACME_34.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 36 Filecreate",
+          "file": "Sysmon_UACME_36_FileCreate.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 37 Filecreate",
+          "file": "Sysmon_UACME_37_FileCreate.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 38",
+          "file": "Sysmon_UACME_38.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 39",
+          "file": "Sysmon_UACME_39.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 41",
+          "file": "Sysmon_UACME_41.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 43",
+          "file": "Sysmon_UACME_43.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 45",
+          "file": "Sysmon_UACME_45.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 53",
+          "file": "Sysmon_UACME_53.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 54",
+          "file": "Sysmon_UACME_54.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 56",
+          "file": "Sysmon_UACME_56.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon Uacme 58",
+          "file": "Sysmon_uacme_58.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 63",
+          "file": "Sysmon_UACME_63.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Sysmon UACME 64",
+          "file": "Sysmon_UACME_64.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "System 7045 Namedpipe Privesc",
+          "file": "System_7045_namedpipe_privesc.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "UACME 59 Sysmon",
+          "file": "UACME_59_Sysmon.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "UACME 61 Changepk",
+          "file": "UACME_61_Changepk.evtx",
+          "category": "Privilege Escalation"
+        },
+        {
+          "name": "Win10 4703 Sedebugprivilege Enabled",
+          "file": "win10_4703_SeDebugPrivilege_enabled.evtx",
+          "category": "Privilege Escalation"
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-01-03T06:06:46.981Z",
+  "totalSamples": 266
+}

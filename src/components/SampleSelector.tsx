@@ -1,37 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './SampleSelector.css';
 
-// Sample EVTX files available for loading
-const SAMPLE_CATEGORIES = [
-  {
-    name: 'Execution',
-    description: 'Process execution and command line attacks',
-    samples: [
-      { name: 'Meterpreter Reverse TCP (MSI)', file: 'Exec_sysmon_meterpreter_reversetcp_msipackage.evtx' },
-      { name: 'MSHTA SharpShooter', file: 'sysmon_mshta_sharpshooter_stageless_meterpreter.evtx' },
-      { name: 'Regsvr32 SCT', file: 'exec_sysmon_lobin_regsvr32_sct.evtx' },
-      { name: 'WMIC XSL Internet', file: 'exec_wmic_xsl_internet_sysmon_3_1_11.evtx' },
-      { name: 'Compiled HTML Execution', file: 'Sysmon_Exec_CompiledHTML.evtx' },
-      { name: 'Rundll32 LOLBIN', file: 'exec_sysmon_1_11_lolbin_rundll32_openurl_FileProtocolHandler.evtx' },
-    ]
-  },
-  {
-    name: 'Defense Evasion',
-    description: 'Techniques to avoid detection',
-    samples: [
-      { name: 'Visual Studio Pre-build', file: 'execution_evasion_visual_studio_prebuild_event.evtx' },
-      { name: 'JScript9 Evasion', file: 'exec_sysmon_1_7_jscript9_defense_evasion.evtx' },
-    ]
-  },
-  {
-    name: 'Persistence',
-    description: 'Techniques for maintaining access',
-    samples: [
-      { name: 'Scheduled Task Execution', file: 'exec_persist_rundll32_mshta_scheduledtask_sysmon_1_3_11.evtx' },
-      { name: 'VSS Persistence', file: 'sysmon_exec_from_vss_persistence.evtx' },
-    ]
-  },
-];
+interface Sample {
+  name: string;
+  file: string;
+  category: string;
+}
+
+interface Category {
+  name: string;
+  description: string;
+  sampleCount: number;
+  samples: Sample[];
+}
+
+interface SamplesManifest {
+  categories: Category[];
+  generatedAt: string;
+  totalSamples: number;
+}
 
 interface SampleSelectorProps {
   onSelectSample: (url: string, filename: string) => void;
@@ -39,15 +26,34 @@ interface SampleSelectorProps {
 }
 
 export default function SampleSelector({ onSelectSample, onClose }: SampleSelectorProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>(SAMPLE_CATEGORIES[0].name);
+  const [manifest, setManifest] = useState<SamplesManifest | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentCategory = SAMPLE_CATEGORIES.find(c => c.name === selectedCategory);
+  // Load manifest on mount
+  useEffect(() => {
+    fetch('/samples-manifest.json')
+      .then(res => res.json())
+      .then((data: SamplesManifest) => {
+        setManifest(data);
+        // Set first category as default
+        if (data.categories.length > 0) {
+          setSelectedCategory(data.categories[0].name);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load samples manifest:', err);
+        setError('Failed to load samples list. Please ensure the project was built correctly.');
+      });
+  }, []);
 
-  const handleSelectSample = async (sample: { name: string; file: string }) => {
+  const currentCategory = manifest?.categories.find(c => c.name === selectedCategory);
+
+  const handleSelectSample = async (sample: Sample) => {
     setLoading(sample.file);
-    // Build the URL to the sample file
-    const url = `/samples/EVTX-ATTACK-SAMPLES/Execution/${sample.file}`;
+    // Build the URL to the sample file using the sample's category
+    const url = `/samples/EVTX-ATTACK-SAMPLES/${sample.category}/${sample.file}`;
     onSelectSample(url, sample.file);
   };
 
@@ -60,40 +66,58 @@ export default function SampleSelector({ onSelectSample, onClose }: SampleSelect
         </div>
 
         <div className="sample-selector-content">
-          <div className="category-tabs">
-            {SAMPLE_CATEGORIES.map(cat => (
-              <button
-                key={cat.name}
-                className={`category-tab ${selectedCategory === cat.name ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.name)}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          {currentCategory && (
-            <div className="sample-list">
-              <p className="category-description">{currentCategory.description}</p>
-              {currentCategory.samples.map(sample => (
-                <button
-                  key={sample.file}
-                  className={`sample-item ${loading === sample.file ? 'loading' : ''}`}
-                  onClick={() => handleSelectSample(sample)}
-                  disabled={loading !== null}
-                >
-                  <span className="sample-name">{sample.name}</span>
-                  <span className="sample-file">{sample.file}</span>
-                  {loading === sample.file && <span className="loading-spinner" />}
-                </button>
-              ))}
+          {error && (
+            <div className="error-message">
+              {error}
             </div>
+          )}
+
+          {!manifest && !error && (
+            <div className="loading-message">
+              Loading samples...
+            </div>
+          )}
+
+          {manifest && (
+            <>
+              <div className="category-tabs">
+                {manifest.categories.map(cat => (
+                  <button
+                    key={cat.name}
+                    className={`category-tab ${selectedCategory === cat.name ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.name)}
+                  >
+                    {cat.name}
+                    <span className="category-count">({cat.sampleCount})</span>
+                  </button>
+                ))}
+              </div>
+
+              {currentCategory && (
+                <div className="sample-list">
+                  <p className="category-description">{currentCategory.description}</p>
+                  {currentCategory.samples.map(sample => (
+                    <button
+                      key={sample.file}
+                      className={`sample-item ${loading === sample.file ? 'loading' : ''}`}
+                      onClick={() => handleSelectSample(sample)}
+                      disabled={loading !== null}
+                    >
+                      <span className="sample-name">{sample.name}</span>
+                      <span className="sample-file">{sample.file}</span>
+                      {loading === sample.file && <span className="loading-spinner" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="sample-selector-footer">
           <p className="credit">
             Samples from <a href="https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES" target="_blank" rel="noopener noreferrer">EVTX-ATTACK-SAMPLES</a> by @sbousseaden
+            {manifest && <span className="total-samples"> • {manifest.totalSamples} total samples</span>}
           </p>
         </div>
       </div>

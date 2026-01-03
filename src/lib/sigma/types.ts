@@ -38,6 +38,7 @@ export type SigmaModifier =
   | 'utf16le'
   | 'utf16be'
   | 'wide'
+  | 'cidr'         // CIDR notation (IP/netmask)
   | 'exists';      // field exists (any value)
 
 /**
