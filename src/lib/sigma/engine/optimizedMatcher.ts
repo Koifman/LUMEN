@@ -170,6 +170,90 @@ const SERVICE_EVENTID_HINTS: Record<string, number[]> = {
 };
 
 /**
+ * Mapping of EventID + Category combinations to expected providers
+ * This prevents false positives from events with same EventID but different provider
+ * (e.g., RPC Event ID 1 vs Sysmon Event ID 1)
+ */
+const EVENTID_CATEGORY_TO_PROVIDERS: Record<string, string[]> = {
+  // Process creation - Sysmon EID 1 or Security EID 4688
+  '1:process_creation': ['Microsoft-Windows-Sysmon'],
+  '4688:process_creation': ['Security', 'Microsoft-Windows-Security-Auditing'],
+
+  // Sysmon events (2-29, 255) must come from Sysmon provider
+  '2:file_change': ['Microsoft-Windows-Sysmon'],
+  '3:network_connection': ['Microsoft-Windows-Sysmon'],
+  '4:sysmon_status': ['Microsoft-Windows-Sysmon'],
+  '5:process_termination': ['Microsoft-Windows-Sysmon'],
+  '6:driver_load': ['Microsoft-Windows-Sysmon'],
+  '7:image_load': ['Microsoft-Windows-Sysmon'],
+  '8:create_remote_thread': ['Microsoft-Windows-Sysmon'],
+  '9:raw_access_thread': ['Microsoft-Windows-Sysmon'],
+  '10:process_access': ['Microsoft-Windows-Sysmon'],
+  '11:file_event': ['Microsoft-Windows-Sysmon'],
+  '12:registry_event': ['Microsoft-Windows-Sysmon'],
+  '12:registry_add': ['Microsoft-Windows-Sysmon'],
+  '12:registry_delete': ['Microsoft-Windows-Sysmon'],
+  '13:registry_set': ['Microsoft-Windows-Sysmon'],
+  '13:registry_event': ['Microsoft-Windows-Sysmon'],
+  '14:registry_rename': ['Microsoft-Windows-Sysmon'],
+  '14:registry_event': ['Microsoft-Windows-Sysmon'],
+  '15:create_stream_hash': ['Microsoft-Windows-Sysmon'],
+  '16:sysmon_status': ['Microsoft-Windows-Sysmon'],
+  '17:pipe_created': ['Microsoft-Windows-Sysmon'],
+  '18:pipe_created': ['Microsoft-Windows-Sysmon'],
+  '19:wmi_event': ['Microsoft-Windows-Sysmon'],
+  '20:wmi_event': ['Microsoft-Windows-Sysmon'],
+  '21:wmi_event': ['Microsoft-Windows-Sysmon'],
+  '22:dns_query': ['Microsoft-Windows-Sysmon'],
+  '23:file_delete': ['Microsoft-Windows-Sysmon'],
+  '24:clipboard_capture': ['Microsoft-Windows-Sysmon'],
+  '25:process_tampering': ['Microsoft-Windows-Sysmon'],
+  '26:file_delete_detected': ['Microsoft-Windows-Sysmon'],
+  '27:file_block_executable': ['Microsoft-Windows-Sysmon'],
+  '28:file_block_shredding': ['Microsoft-Windows-Sysmon'],
+  '29:file_executable_detected': ['Microsoft-Windows-Sysmon'],
+  '255:sysmon_error': ['Microsoft-Windows-Sysmon'],
+};
+
+/**
+ * Mapping of EventID + Service combinations to expected providers
+ * Used when rules specify service but not category
+ */
+const EVENTID_SERVICE_TO_PROVIDERS: Record<string, string[]> = {
+  // Sysmon service - all Sysmon EventIDs must come from Sysmon provider
+  '1:sysmon': ['Microsoft-Windows-Sysmon'],
+  '2:sysmon': ['Microsoft-Windows-Sysmon'],
+  '3:sysmon': ['Microsoft-Windows-Sysmon'],
+  '4:sysmon': ['Microsoft-Windows-Sysmon'],
+  '5:sysmon': ['Microsoft-Windows-Sysmon'],
+  '6:sysmon': ['Microsoft-Windows-Sysmon'],
+  '7:sysmon': ['Microsoft-Windows-Sysmon'],
+  '8:sysmon': ['Microsoft-Windows-Sysmon'],
+  '9:sysmon': ['Microsoft-Windows-Sysmon'],
+  '10:sysmon': ['Microsoft-Windows-Sysmon'],
+  '11:sysmon': ['Microsoft-Windows-Sysmon'],
+  '12:sysmon': ['Microsoft-Windows-Sysmon'],
+  '13:sysmon': ['Microsoft-Windows-Sysmon'],
+  '14:sysmon': ['Microsoft-Windows-Sysmon'],
+  '15:sysmon': ['Microsoft-Windows-Sysmon'],
+  '16:sysmon': ['Microsoft-Windows-Sysmon'],
+  '17:sysmon': ['Microsoft-Windows-Sysmon'],
+  '18:sysmon': ['Microsoft-Windows-Sysmon'],
+  '19:sysmon': ['Microsoft-Windows-Sysmon'],
+  '20:sysmon': ['Microsoft-Windows-Sysmon'],
+  '21:sysmon': ['Microsoft-Windows-Sysmon'],
+  '22:sysmon': ['Microsoft-Windows-Sysmon'],
+  '23:sysmon': ['Microsoft-Windows-Sysmon'],
+  '24:sysmon': ['Microsoft-Windows-Sysmon'],
+  '25:sysmon': ['Microsoft-Windows-Sysmon'],
+  '26:sysmon': ['Microsoft-Windows-Sysmon'],
+  '27:sysmon': ['Microsoft-Windows-Sysmon'],
+  '28:sysmon': ['Microsoft-Windows-Sysmon'],
+  '29:sysmon': ['Microsoft-Windows-Sysmon'],
+  '255:sysmon': ['Microsoft-Windows-Sysmon'],
+};
+
+/**
  * Extract EventID requirements from a compiled rule
  * Returns null if rule applies to all EventIDs (no specific requirement)
  */
@@ -214,6 +298,53 @@ export function extractRuleEventIDs(rule: CompiledSigmaRule): number[] | null {
 
   // Return null if no specific EventIDs (rule applies to all events)
   return eventIds.size > 0 ? Array.from(eventIds) : null;
+}
+
+/**
+ * Check if an event's provider matches the expected provider(s) for the rule's category/service and EventID
+ * Returns true if:
+ * - Rule has no category or service (universal rule)
+ * - No provider mapping exists for this EventID+category/service combination
+ * - Event provider matches one of the expected providers
+ *
+ * This prevents false positives like RPC Event ID 1 matching process_creation rules
+ */
+export function matchesExpectedProvider(event: any, rule: CompiledSigmaRule): boolean {
+  const category = rule.rule.logsource?.category;
+  const service = rule.rule.logsource?.service;
+  const eventId = event?.eventId;
+  const eventProvider = event?.source || event?.Provider;
+
+  // No EventID or provider info - can't validate, allow through
+  if (eventId === undefined || !eventProvider) {
+    return true;
+  }
+
+  let expectedProviders: string[] | undefined;
+
+  // Try category first (more specific)
+  if (category) {
+    const categoryKey = `${eventId}:${category}`;
+    expectedProviders = EVENTID_CATEGORY_TO_PROVIDERS[categoryKey];
+  }
+
+  // If no category match, try service
+  if (!expectedProviders && service) {
+    const serviceKey = `${eventId}:${service}`;
+    expectedProviders = EVENTID_SERVICE_TO_PROVIDERS[serviceKey];
+  }
+
+  // No provider mapping for this combination - allow through
+  if (!expectedProviders) {
+    return true;
+  }
+
+  // Check if event provider matches any expected provider (case-insensitive)
+  const eventProviderLower = eventProvider.toLowerCase();
+  return expectedProviders.some(expected =>
+    eventProviderLower === expected.toLowerCase() ||
+    eventProviderLower.includes(expected.toLowerCase())
+  );
 }
 
 /**

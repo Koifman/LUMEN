@@ -7,6 +7,7 @@
 import { CompiledSigmaRule, ConditionNode, SigmaRuleMatch, SelectionMatchResult, FieldMatchResult } from '../types';
 import { applyModifier } from './modifiers';
 import { expandPattern } from '../parser/conditionParser';
+import { extractRuleEventIDs, matchesExpectedProvider } from './optimizedMatcher';
 
 // Cache for parsed EventData to avoid repeated XML parsing
 const eventDataCache = new WeakMap<object, Map<string, string | undefined>>();
@@ -141,6 +142,24 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
 
   // Skip rules that rely on Sysmon-only metadata for Security 4688 events
   if (isSecurity4688 && ruleUsesSysmonOnlyFields(compiledRule)) {
+    return null;
+  }
+
+  // CRITICAL FIX: Check if event EventID matches rule's logsource category requirements
+  // This prevents false positives from rules with negation logic (e.g., "not Image|contains")
+  // matching events that don't have the expected fields at all (e.g., RPC logs)
+  const requiredEventIds = extractRuleEventIDs(compiledRule);
+  if (requiredEventIds !== null && requiredEventIds.length > 0) {
+    const eventId = event?.eventId;
+    if (eventId === undefined || !requiredEventIds.includes(eventId)) {
+      // Event doesn't match the required EventIDs for this rule's logsource category
+      return null;
+    }
+  }
+
+  // CRITICAL FIX (Issue #34): Check if event provider matches expected provider for category+EventID
+  // Prevents false positives like RPC Event ID 1 matching process_creation rules (Sysmon Event ID 1)
+  if (!matchesExpectedProvider(event, compiledRule)) {
     return null;
   }
 
