@@ -398,6 +398,36 @@ function extractField(event: any, fieldPath: string): any {
     return event[mappedField];
   }
 
+  // SIGMA field name translation: Sysmon -> Windows Security Event Log
+  // Many SIGMA rules use Sysmon field names, but we need to support Windows Security logs too
+  const sigmaFieldMappings: Record<string, string[]> = {
+    // Process Creation (Sysmon EID 1 vs Security EID 4688)
+    'Image': ['NewProcessName'],
+    'ParentImage': ['ParentProcessName'],
+    'CommandLine': ['CommandLine', 'ProcessCommandLine'],
+    'ParentCommandLine': ['ParentProcessCommandLine'],
+    'User': ['SubjectUserName', 'TargetUserName'],
+    'LogonId': ['SubjectLogonId', 'TargetLogonId'],
+    'IntegrityLevel': ['MandatoryLabel'],
+    // File operations
+    'TargetFilename': ['ObjectName'],
+    // Registry operations
+    'TargetObject': ['ObjectName'],
+    // Network
+    'SourceIp': ['IpAddress', 'SourceAddress'],
+    'DestinationIp': ['DestAddress']
+  };
+
+  // Check alternative field names in structured eventData (for WASM-parsed events)
+  const alternativeFields = sigmaFieldMappings[fieldPath];
+  if (alternativeFields && event.eventData) {
+    for (const altField of alternativeFields) {
+      if (altField in event.eventData) {
+        return event.eventData[altField];
+      }
+    }
+  }
+
   // Parse EventData fields from rawLine XML (with caching) - slow path
   if (event.rawLine && typeof event.rawLine === 'string' && event.rawLine.includes('<')) {
     let value = extractFromEventData(event, fieldPath);
@@ -405,27 +435,7 @@ function extractField(event: any, fieldPath: string): any {
       return value;
     }
 
-    // SIGMA field name translation: Sysmon -> Windows Security Event Log
-    // Many SIGMA rules use Sysmon field names, but we need to support Windows Security logs too
-    const sigmaFieldMappings: Record<string, string[]> = {
-      // Process Creation (Sysmon EID 1 vs Security EID 4688)
-      'Image': ['NewProcessName'],
-      'ParentImage': ['ParentProcessName'],
-      'CommandLine': ['CommandLine', 'ProcessCommandLine'],
-      'ParentCommandLine': ['ParentProcessCommandLine'],
-      'User': ['SubjectUserName', 'TargetUserName'],
-      'LogonId': ['SubjectLogonId', 'TargetLogonId'],
-      'IntegrityLevel': ['MandatoryLabel'],
-      // File operations
-      'TargetFilename': ['ObjectName'],
-      // Registry operations
-      'TargetObject': ['ObjectName'],
-      // Network
-      'SourceIp': ['IpAddress', 'SourceAddress'],
-      'DestinationIp': ['DestAddress']
-    };
-
-    const alternativeFields = sigmaFieldMappings[fieldPath];
+    // Check alternative field names via XML parsing (for XML-parsed events)
     if (alternativeFields) {
       for (const altField of alternativeFields) {
         value = extractFromEventData(event, altField);
