@@ -251,6 +251,24 @@ const EVENTID_SERVICE_TO_PROVIDERS: Record<string, string[]> = {
   '28:sysmon': ['Microsoft-Windows-Sysmon'],
   '29:sysmon': ['Microsoft-Windows-Sysmon'],
   '255:sysmon': ['Microsoft-Windows-Sysmon'],
+
+  // Windows Defender (Microsoft-Windows-Windows Defender/Operational)
+  // Prevents false positives from other logs with same EventIDs (e.g., Wcmsvc EventID 1009)
+  '1006:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1007:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1008:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1009:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1010:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1011:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1013:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1116:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1117:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1118:windefend': ['Microsoft-Windows-Windows Defender'],
+  '1119:windefend': ['Microsoft-Windows-Windows Defender'],
+  '5001:windefend': ['Microsoft-Windows-Windows Defender'],
+  '5007:windefend': ['Microsoft-Windows-Windows Defender'],
+  '5010:windefend': ['Microsoft-Windows-Windows Defender'],
+  '5012:windefend': ['Microsoft-Windows-Windows Defender'],
 };
 
 /**
