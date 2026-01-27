@@ -294,8 +294,20 @@ function generateHTMLReport(reportData: ReportData): string {
 `;
 
           fieldMatches.forEach(fm => {
-            const valueStr = fm.value === '' ? '(empty)' : String(fm.value).substring(0, 150);
-            const truncated = String(fm.value).length > 150 ? '...' : '';
+            // Handle different value types for clearer reporting
+            let valueStr: string;
+            let truncated = '';
+            if (fm.value === undefined || fm.value === null) {
+              valueStr = '(field not present in event)';
+            } else if (fm.value === '') {
+              valueStr = '(empty string)';
+            } else if (fm.value === '?') {
+              valueStr = '? (metadata unavailable)';
+            } else {
+              valueStr = String(fm.value).substring(0, 150);
+              truncated = String(fm.value).length > 150 ? '...' : '';
+            }
+
             html += `
             <tr>
               <td>
@@ -574,8 +586,19 @@ function generateMarkdownReport(reportData: ReportData): string {
           md += `|-------|-------|-----------|----------|\n`;
 
           fieldMatches.forEach(fm => {
-            const valueStr = fm.value === '' ? '(empty)' : String(fm.value).substring(0, 100);
-            const truncated = String(fm.value).length > 100 ? '...' : '';
+            // Handle different value types for clearer reporting
+            let valueStr: string;
+            let truncated = '';
+            if (fm.value === undefined || fm.value === null) {
+              valueStr = '(field not present)';
+            } else if (fm.value === '') {
+              valueStr = '(empty)';
+            } else if (fm.value === '?') {
+              valueStr = '? (unavailable)';
+            } else {
+              valueStr = String(fm.value).substring(0, 100);
+              truncated = String(fm.value).length > 100 ? '...' : '';
+            }
             const escapedValue = valueStr.replace(/\|/g, '\\|').replace(/\n/g, ' ');
             md += `| ${fm.field} | \`${escapedValue}${truncated}\` | ${fm.selection} | ${fm.modifier || '-'} |\n`;
           });

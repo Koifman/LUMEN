@@ -80,11 +80,19 @@ export function applyModifier(
   targetValue: any,
   modifier?: SigmaModifier
 ): boolean {
+  // Handle undefined/null fields
   if (fieldValue === undefined || fieldValue === null) {
+    // The 'exists' modifier explicitly checks for field existence
     return modifier === 'exists' ? false : false;
   }
 
+  // Treat '?' as undefined (Sysmon uses '?' for unavailable metadata)
+  // This prevents false positives when metadata fields are missing
   const fieldStr = String(fieldValue);
+  if (fieldStr === '?') {
+    return modifier === 'exists' ? false : false;
+  }
+
   const targetStr = String(targetValue);
   const fieldLower = fieldStr.toLowerCase();
   const targetLower = typeof targetValue === 'string'
