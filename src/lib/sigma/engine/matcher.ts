@@ -256,6 +256,20 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
     }
   }
 
+  // CRITICAL FIX: Logsource product validation
+  // Prevents cross-platform rules from matching incompatible events
+  // Example: Azure sign-in rules (product: azure) should not match Windows events
+  const ruleProduct = compiledRule.rule.logsource?.product?.toLowerCase();
+  if (ruleProduct) {
+    // For EVTX analysis, we only process Windows events
+    // If rule specifies a non-Windows product, skip it
+    const windowsProducts = ['windows', 'win'];
+    if (!windowsProducts.includes(ruleProduct)) {
+      // Rule is for a different platform (azure, linux, macos, etc.)
+      return null;
+    }
+  }
+
   // CRITICAL FIX (Issue #34): Check if event provider matches expected provider for category+EventID
   // Prevents false positives like RPC Event ID 1 matching process_creation rules (Sysmon Event ID 1)
   if (!matchesExpectedProvider(event, compiledRule)) {
