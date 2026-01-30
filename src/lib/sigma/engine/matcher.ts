@@ -135,15 +135,33 @@ export function clearIndexedCache(event: any): void {
 }
 
 /**
- * Check if condition is negation-only (starts with NOT at root level)
- * Examples:
- * - "not selection" → true
- * - "not (selection1 or selection2)" → true
- * - "selection and not filter" → false (mixed)
- * - "selection1 or selection2" → false (no negation)
+ * Check if a condition is negation-only (contains only NOT operations)
+ * Handles complex cases like "not selection and not selection1" (AND of NOTs)
+ * Returns true if all leaf selections are negated
  */
 function isNegationOnlyCondition(node: ConditionNode): boolean {
-  return node.type === 'NOT';
+  switch (node.type) {
+    case 'NOT':
+      // A NOT node is negation-only
+      return true;
+
+    case 'AND':
+    case 'OR':
+      // AND/OR is negation-only if ALL children are negation-only
+      if (!node.children || node.children.length === 0) {
+        return false;
+      }
+      return node.children.every(child => isNegationOnlyCondition(child));
+
+    case 'SELECTION':
+    case 'ONE_OF':
+    case 'ALL_OF':
+      // These are positive matches, not negations
+      return false;
+
+    default:
+      return false;
+  }
 }
 
 /**
@@ -234,6 +252,20 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
     const eventId = event?.eventId;
     if (eventId === undefined || !requiredEventIds.includes(eventId)) {
       // Event doesn't match the required EventIDs for this rule's logsource category
+      return null;
+    }
+  }
+
+  // CRITICAL FIX: Logsource product validation
+  // Prevents cross-platform rules from matching incompatible events
+  // Example: Azure sign-in rules (product: azure) should not match Windows events
+  const ruleProduct = compiledRule.rule.logsource?.product?.toLowerCase();
+  if (ruleProduct) {
+    // For EVTX analysis, we only process Windows events
+    // If rule specifies a non-Windows product, skip it
+    const windowsProducts = ['windows', 'win'];
+    if (!windowsProducts.includes(ruleProduct)) {
+      // Rule is for a different platform (azure, linux, macos, etc.)
       return null;
     }
   }
