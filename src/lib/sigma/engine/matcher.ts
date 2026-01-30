@@ -4,7 +4,7 @@
  * Matches events against compiled SIGMA rules
  */
 
-import { CompiledSigmaRule, ConditionNode, SigmaRuleMatch, SelectionMatchResult, FieldMatchResult } from '../types';
+import { CompiledSigmaRule, CompiledSelection, ConditionNode, SigmaRuleMatch, SelectionMatchResult, FieldMatchResult } from '../types';
 import { applyModifier } from './modifiers';
 import { expandPattern } from '../parser/conditionParser';
 import { extractRuleEventIDs, matchesExpectedProvider } from './optimizedMatcher';
@@ -135,6 +135,87 @@ export function clearIndexedCache(event: any): void {
 }
 
 /**
+ * Check if condition is negation-only (starts with NOT at root level)
+ * Examples:
+ * - "not selection" → true
+ * - "not (selection1 or selection2)" → true
+ * - "selection and not filter" → false (mixed)
+ * - "selection1 or selection2" → false (no negation)
+ */
+function isNegationOnlyCondition(node: ConditionNode): boolean {
+  return node.type === 'NOT';
+}
+
+/**
+ * Extract all field names referenced in a condition
+ * Recursively traverses condition tree and collects fields from all selections
+ */
+function extractFieldsFromCondition(
+  node: ConditionNode,
+  selections: Map<string, CompiledSelection>
+): string[] {
+  const fields: string[] = [];
+
+  function traverse(n: ConditionNode): void {
+    switch (n.type) {
+      case 'SELECTION': {
+        const selectionName = String(n.value);
+        const selection = selections.get(selectionName);
+        if (selection) {
+          for (const condition of selection.conditions) {
+            fields.push(condition.field);
+          }
+        }
+        break;
+      }
+
+      case 'AND':
+      case 'OR':
+      case 'NOT':
+        if (n.children) {
+          for (const child of n.children) {
+            traverse(child);
+          }
+        }
+        break;
+
+      case 'ONE_OF':
+      case 'ALL_OF': {
+        // Expand pattern and collect fields from matching selections
+        const pattern = n.pattern || '';
+        const matchingSelections = expandPattern(pattern, Array.from(selections.keys()));
+        for (const selName of matchingSelections) {
+          const selection = selections.get(selName);
+          if (selection) {
+            for (const condition of selection.conditions) {
+              fields.push(condition.field);
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  traverse(node);
+  return fields;
+}
+
+/**
+ * Check if event has at least one of the specified fields
+ * Uses the same field extraction logic as extractField() to ensure consistency
+ */
+function hasAnyField(event: any, fields: string[]): boolean {
+  for (const field of fields) {
+    const value = extractField(event, field);
+    if (value !== undefined) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Match an event against a compiled rule
  */
 export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRuleMatch | null {
@@ -161,6 +242,20 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
   // Prevents false positives like RPC Event ID 1 matching process_creation rules (Sysmon Event ID 1)
   if (!matchesExpectedProvider(event, compiledRule)) {
     return null;
+  }
+
+  // CRITICAL FIX: Field existence validation for negation-only rules
+  // Prevents false positives when rules with pure negation (e.g., "not selection") match events
+  // that don't have ANY of the selection's fields (e.g., Zeek rules matching EVTX logs)
+  // Example: Zeek RDP rule with "not id.orig_h|cidr: [...]" should not match Windows events
+  // that lack id.orig_h field entirely
+  if (isNegationOnlyCondition(compiledRule.condition)) {
+    const requiredFields = extractFieldsFromCondition(compiledRule.condition, compiledRule.selections);
+    if (requiredFields.length > 0 && !hasAnyField(event, requiredFields)) {
+      // Event doesn't have any of the fields referenced in negation-only condition
+      // Skip this rule to prevent false positive
+      return null;
+    }
   }
 
   // Evaluate all selections
