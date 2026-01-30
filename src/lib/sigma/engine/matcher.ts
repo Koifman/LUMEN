@@ -135,15 +135,33 @@ export function clearIndexedCache(event: any): void {
 }
 
 /**
- * Check if condition is negation-only (starts with NOT at root level)
- * Examples:
- * - "not selection" → true
- * - "not (selection1 or selection2)" → true
- * - "selection and not filter" → false (mixed)
- * - "selection1 or selection2" → false (no negation)
+ * Check if a condition is negation-only (contains only NOT operations)
+ * Handles complex cases like "not selection and not selection1" (AND of NOTs)
+ * Returns true if all leaf selections are negated
  */
 function isNegationOnlyCondition(node: ConditionNode): boolean {
-  return node.type === 'NOT';
+  switch (node.type) {
+    case 'NOT':
+      // A NOT node is negation-only
+      return true;
+
+    case 'AND':
+    case 'OR':
+      // AND/OR is negation-only if ALL children are negation-only
+      if (!node.children || node.children.length === 0) {
+        return false;
+      }
+      return node.children.every(child => isNegationOnlyCondition(child));
+
+    case 'SELECTION':
+    case 'ONE_OF':
+    case 'ALL_OF':
+      // These are positive matches, not negations
+      return false;
+
+    default:
+      return false;
+  }
 }
 
 /**
