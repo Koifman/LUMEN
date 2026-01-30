@@ -540,6 +540,99 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
     [onFileLoaded]
   );
 
+  const handleMultipleSamples = useCallback(
+    async (samples: Array<{ url: string; filename: string }>) => {
+      setShowSampleSelector(false);
+      setIsProcessing(true);
+      setCurrentFileIndex(0);
+      setTotalFiles(samples.length);
+      setChunksProcessed(0);
+      setTotalChunks(0);
+
+      const successfulFiles: FileProcessingResult[] = [];
+      const failedFiles: FileProcessingResult[] = [];
+      const allEntries: any[] = [];
+      const sourceFiles: string[] = [];
+
+      for (let i = 0; i < samples.length; i++) {
+        const { url, filename } = samples[i];
+        setCurrentFileIndex(i + 1);
+        setProcessingStatus(`Fetching sample ${i + 1}/${samples.length}: ${filename}...`);
+
+        try {
+          // Fetch the sample EVTX file
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.statusText}`);
+          }
+
+          // Get as blob and convert to File
+          const blob = await response.blob();
+          const file = new File([blob], filename, { type: 'application/octet-stream' });
+
+          // Process the file
+          setProcessingStatus(`Parsing ${i + 1}/${samples.length}: ${filename}...`);
+          const entries = await parseBinaryEVTXToEntries(
+            file,
+            (processed, total) => {
+              const totalDisplay = total ? total.toLocaleString() : 'unknown';
+              const percentage = total > 0 ? ` (${Math.round((processed / total) * 100)}%)` : '';
+              setProcessingStatus(`[${i + 1}/${samples.length}] ${filename}: ${processed.toLocaleString()} / ${totalDisplay}${percentage}`);
+            },
+            filename
+          );
+
+          allEntries.push(...entries);
+          sourceFiles.push(filename);
+          successfulFiles.push({
+            filename,
+            fileSize: blob.size,
+            status: 'success',
+            recordCount: entries.length,
+          });
+        } catch (error) {
+          failedFiles.push({
+            filename,
+            fileSize: 0,
+            status: 'error',
+            error: {
+              type: 'PARSE_ERROR' as ErrorType,
+              message: error instanceof Error ? error.message : 'Unknown error',
+            },
+          });
+        }
+      }
+
+      const parsedData: ParsedData = {
+        entries: allEntries,
+        format: 'evtx',
+        totalLines: allEntries.length,
+        parsedLines: allEntries.length,
+        sourceFiles,
+      };
+
+      // Show results modal
+      setProcessingResults({
+        totalFiles: samples.length,
+        successfulFiles,
+        failedFiles,
+        partialFiles: [],
+        totalRecordsParsed: allEntries.length,
+        totalErrors: failedFiles.length,
+      });
+      setShowProcessingResults(true);
+
+      setProcessingStatus('Loading analysis selector...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      onFileLoaded(parsedData, `${samples.length}_samples`);
+      setIsProcessing(false);
+      setCurrentFileIndex(0);
+      setTotalFiles(0);
+    },
+    [onFileLoaded]
+  );
+
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -661,6 +754,7 @@ export default function FileDropZone({ onFileLoaded, rulesLoading, onOpenSession
       {showSampleSelector && (
         <SampleSelector
           onSelectSample={handleSampleSelect}
+          onSelectMultipleSamples={handleMultipleSamples}
           onClose={() => setShowSampleSelector(false)}
         />
       )}
