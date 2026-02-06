@@ -4,7 +4,7 @@
  * Compiles parsed SIGMA rules into optimized executable format
  */
 
-import { SigmaRule, CompiledSigmaRule, CompiledSelection, CompiledFieldCondition, ConditionNode } from '../types';
+import { SigmaRule, CompiledSigmaRule, CompiledSelection, CompiledFieldCondition, ConditionNode, SigmaModifier } from '../types';
 import { parseCondition } from '../parser/conditionParser';
 import { parseFieldModifier } from './modifiers';
 
@@ -137,9 +137,9 @@ function preprocessConditionValues(condition: CompiledFieldCondition): CompiledF
  * Detect wildcard patterns and convert to appropriate modifier
  * Converts SIGMA wildcards (*) to contains/startswith/endswith modifiers
  */
-function processWildcards(value: string | number | null, currentModifier?: string): {
+function processWildcards(value: string | number | null, currentModifier?: SigmaModifier): {
   value: string | number | null;
-  modifier?: string;
+  modifier?: SigmaModifier;
 } {
   // Skip if already has a modifier or if not a string
   if (currentModifier || typeof value !== 'string') {
@@ -161,7 +161,7 @@ function processWildcards(value: string | number | null, currentModifier?: strin
   if (startsWithWildcard && endsWithWildcard) {
     return {
       value: str.slice(1, -1), // Remove both * wildcards
-      modifier: 'contains'
+      modifier: 'contains' as SigmaModifier
     };
   }
 
@@ -169,7 +169,7 @@ function processWildcards(value: string | number | null, currentModifier?: strin
   if (startsWithWildcard) {
     return {
       value: str.slice(1), // Remove leading *
-      modifier: 'endswith'
+      modifier: 'endswith' as SigmaModifier
     };
   }
 
@@ -177,7 +177,7 @@ function processWildcards(value: string | number | null, currentModifier?: strin
   if (endsWithWildcard) {
     return {
       value: str.slice(0, -1), // Remove trailing *
-      modifier: 'startswith'
+      modifier: 'startswith' as SigmaModifier
     };
   }
 
