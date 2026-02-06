@@ -134,6 +134,57 @@ function preprocessConditionValues(condition: CompiledFieldCondition): CompiledF
 }
 
 /**
+ * Detect wildcard patterns and convert to appropriate modifier
+ * Converts SIGMA wildcards (*) to contains/startswith/endswith modifiers
+ */
+function processWildcards(value: string | number | null, currentModifier?: string): {
+  value: string | number | null;
+  modifier?: string;
+} {
+  // Skip if already has a modifier or if not a string
+  if (currentModifier || typeof value !== 'string') {
+    return { value, modifier: currentModifier };
+  }
+
+  const str = value as string;
+
+  // Check for wildcards
+  const startsWithWildcard = str.startsWith('*');
+  const endsWithWildcard = str.endsWith('*');
+
+  // No wildcards - use default exact matching
+  if (!startsWithWildcard && !endsWithWildcard) {
+    return { value, modifier: currentModifier };
+  }
+
+  // Both ends have wildcard: *something* -> contains
+  if (startsWithWildcard && endsWithWildcard) {
+    return {
+      value: str.slice(1, -1), // Remove both * wildcards
+      modifier: 'contains'
+    };
+  }
+
+  // Only starts with wildcard: *something -> endswith
+  if (startsWithWildcard) {
+    return {
+      value: str.slice(1), // Remove leading *
+      modifier: 'endswith'
+    };
+  }
+
+  // Only ends with wildcard: something* -> startswith
+  if (endsWithWildcard) {
+    return {
+      value: str.slice(0, -1), // Remove trailing *
+      modifier: 'startswith'
+    };
+  }
+
+  return { value, modifier: currentModifier };
+}
+
+/**
  * Compile a selection into field conditions
  */
 function compileSelection(name: string, selection: any): CompiledSelection {
@@ -147,12 +198,20 @@ function compileSelection(name: string, selection: any): CompiledSelection {
       for (const [fieldSpec, value] of Object.entries(item)) {
         const { field, modifier, requireAll } = parseFieldModifier(fieldSpec);
         const values = Array.isArray(value) ? value : [value];
-        const normalizedValues = values.map(v => v === null ? null : v);
+
+        // Process wildcards for each value
+        const processedValues = values.map(v => {
+          const result = processWildcards(v, modifier);
+          return result.value;
+        });
+
+        // Get modifier from first wildcard-processed value (they should all have the same pattern)
+        const detectedModifier = values.length > 0 ? processWildcards(values[0], modifier).modifier : modifier;
 
         conditions.push({
           field,
-          modifier,
-          values: normalizedValues,
+          modifier: detectedModifier,
+          values: processedValues,
           negate: false,
           requireAll
         });
@@ -167,13 +226,19 @@ function compileSelection(name: string, selection: any): CompiledSelection {
       // Normalize value to array
       const values = Array.isArray(value) ? value : [value];
 
-      // Handle null values
-      const normalizedValues = values.map(v => v === null ? null : v);
+      // Process wildcards for each value
+      const processedValues = values.map(v => {
+        const result = processWildcards(v, modifier);
+        return result.value;
+      });
+
+      // Get modifier from first wildcard-processed value (they should all have the same pattern)
+      const detectedModifier = values.length > 0 ? processWildcards(values[0], modifier).modifier : modifier;
 
       conditions.push({
         field,
-        modifier,
-        values: normalizedValues,
+        modifier: detectedModifier,
+        values: processedValues,
         negate: false,
         requireAll
       });
