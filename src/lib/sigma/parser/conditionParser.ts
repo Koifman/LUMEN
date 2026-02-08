@@ -39,7 +39,6 @@ function tokenize(condition: string): string[] {
 
   const tokens: string[] = [];
   let current = '';
-  let inParens = 0;
 
   for (let i = 0; i < condition.length; i++) {
     const char = condition[i];
@@ -50,15 +49,13 @@ function tokenize(condition: string): string[] {
         current = '';
       }
       tokens.push('(');
-      inParens++;
     } else if (char === ')') {
       if (current.trim()) {
         tokens.push(current.trim());
         current = '';
       }
       tokens.push(')');
-      inParens--;
-    } else if (char === ' ' && inParens === 0) {
+    } else if (char === ' ') {
       if (current.trim()) {
         tokens.push(current.trim());
         current = '';
