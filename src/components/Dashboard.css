@@ -243,6 +243,32 @@
   background: rgba(244, 114, 182, 0.2);
 }
 
+.filter-logic-toggle {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+}
+
+.filter-logic-toggle.logic-or {
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.filter-logic-toggle.logic-and {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid #a855f7;
+  color: #a855f7;
+}
+
+.filter-logic-toggle:hover {
+  filter: brightness(1.2);
+}
+
 /* Log Table Container */
 .log-table-container {
   position: relative;
@@ -399,6 +425,45 @@
 
 .filter-actions .remove-filter:hover {
   background: rgba(244, 114, 182, 0.3);
+}
+
+/* Existing filters shown in filter popup */
+.filter-existing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.filter-existing-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.filter-existing-text {
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.filter-existing-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.filter-existing-remove:hover {
+  color: var(--accent-pink);
 }
 
 .log-entries {
