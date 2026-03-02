@@ -13,6 +13,7 @@ interface RawLogsViewProps {
 }
 
 type FilterOperator = 'equals' | 'contains' | 'not_equals' | 'not_contains';
+type FilterLogic = 'OR' | 'AND';
 
 interface ColumnFilter {
   field: string;
@@ -73,6 +74,7 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
   const [filterValue, setFilterValue] = useState('');
   const [filterOperator, setFilterOperator] = useState<FilterOperator>('contains');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [filterLogic, setFilterLogic] = useState<FilterLogic>('OR');
 
   // Modal state for viewing raw event
   const [selectedEvent, setSelectedEvent] = useState<LogEntry | null>(null);
@@ -94,38 +96,66 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
       return entries;
     }
 
+    // Group filters by field — logic between same-field filters is user-selectable
+    const filtersByField = new Map<string, ColumnFilter[]>();
+    for (const filter of activeFilters) {
+      const existing = filtersByField.get(filter.field) || [];
+      existing.push(filter);
+      filtersByField.set(filter.field, existing);
+    }
+
     return entries.filter(entry => {
-      for (const filter of activeFilters) {
-        if (!matchesFilter(entry, filter)) {
-          return false;
+      // AND between different fields: entry must satisfy every field group
+      for (const fieldFilters of filtersByField.values()) {
+        if (filterLogic === 'OR') {
+          // OR: entry matches if ANY filter in this field matches
+          if (!fieldFilters.some(filter => matchesFilter(entry, filter))) {
+            return false;
+          }
+        } else {
+          // AND: entry must match ALL filters in this field
+          if (!fieldFilters.every(filter => matchesFilter(entry, filter))) {
+            return false;
+          }
         }
       }
       return true;
     });
-  }, [data.entries, filters, selectedFile]);
+  }, [data.entries, filters, selectedFile, filterLogic]);
 
-  // Add a filter
+  // Add a filter (allows multiple filters per field)
   const addFilter = (field: string) => {
     if (!filterValue.trim()) {
       setActiveFilterColumn(null);
       return;
     }
 
-    const newFilters = filters.filter(f => f.field !== field);
-    newFilters.push({ field, operator: filterOperator, value: filterValue });
-    setFilters(newFilters);
-    setActiveFilterColumn(null);
+    // Check for duplicate: same field + operator + value
+    const isDuplicate = filters.some(
+      f => f.field === field && f.operator === filterOperator && f.value.toLowerCase() === filterValue.trim().toLowerCase()
+    );
+    if (!isDuplicate) {
+      setFilters([...filters, { field, operator: filterOperator, value: filterValue.trim() }]);
+    }
     setFilterValue('');
     setFilterOperator('contains');
   };
 
-  // Remove a filter
-  const removeFilter = (field: string) => {
+  // Remove a specific filter by index
+  const removeFilter = (index: number) => {
+    setFilters(filters.filter((_, i) => i !== index));
+  };
+
+  // Remove all filters for a field
+  const removeFieldFilters = (field: string) => {
     setFilters(filters.filter(f => f.field !== field));
   };
 
-  // Get filter for a field
-  const getFilterForField = (field: string) => filters.find(f => f.field === field);
+  // Get all filters for a field
+  const getFiltersForField = (field: string) => filters.filter(f => f.field === field);
+
+  // Check if field has any filters
+  const hasFilterForField = (field: string) => filters.some(f => f.field === field);
 
   // Handle opening event details modal
   const handleViewEvent = (entry: LogEntry) => {
@@ -174,12 +204,29 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
           {/* Active Filters Display */}
           {filters.length > 0 && (
             <div className="active-filters">
-              {filters.map(f => (
-                <span key={f.field} className="filter-tag">
+              {filters.map((f, idx) => (
+                <span key={`${f.field}-${f.operator}-${f.value}-${idx}`} className="filter-tag">
                   {f.field} {f.operator.replace('_', ' ')} "{f.value}"
-                  <button onClick={() => removeFilter(f.field)}>×</button>
+                  <button onClick={() => removeFilter(idx)}>×</button>
                 </span>
               ))}
+              {/* Show logic toggle only when there are multiple filters on any single field */}
+              {Array.from(new Map<string, number>(
+                filters.reduce((acc, f) => {
+                  acc.set(f.field, (acc.get(f.field) || 0) + 1);
+                  return acc;
+                }, new Map<string, number>())
+              ).values()).some(count => count > 1) && (
+                <button
+                  className={`filter-logic-toggle ${filterLogic === 'AND' ? 'logic-and' : 'logic-or'}`}
+                  onClick={() => setFilterLogic(filterLogic === 'OR' ? 'AND' : 'OR')}
+                  title={filterLogic === 'OR'
+                    ? 'OR mode: matches any filter per field. Click to switch to AND.'
+                    : 'AND mode: must match all filters per field. Click to switch to OR.'}
+                >
+                  {filterLogic}
+                </button>
+              )}
               <button className="clear-all-filters" onClick={() => setFilters([])}>
                 Clear All
               </button>
@@ -191,23 +238,23 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
             <div className={`log-header ${data.format === 'evtx' ? 'evtx-header' : ''}`}>
               {data.format === 'evtx' ? (
                 <>
-                  <div className={`header-cell ${getFilterForField('timestamp') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'timestamp' ? null : 'timestamp')}>
+                  <div className={`header-cell ${hasFilterForField('timestamp') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'timestamp' ? null : 'timestamp')}>
                     <span>Timestamp</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('computer') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'computer' ? null : 'computer')}>
+                  <div className={`header-cell ${hasFilterForField('computer') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'computer' ? null : 'computer')}>
                     <span>Computer</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('eventId') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'eventId' ? null : 'eventId')}>
+                  <div className={`header-cell ${hasFilterForField('eventId') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'eventId' ? null : 'eventId')}>
                     <span>Event ID</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('source') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'source' ? null : 'source')}>
+                  <div className={`header-cell ${hasFilterForField('source') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'source' ? null : 'source')}>
                     <span>Source</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('message') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'message' ? null : 'message')}>
+                  <div className={`header-cell ${hasFilterForField('message') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'message' ? null : 'message')}>
                     <span>Message</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
@@ -217,23 +264,23 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                 </>
               ) : (
                 <>
-                  <div className={`header-cell ${getFilterForField('timestamp') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'timestamp' ? null : 'timestamp')}>
+                  <div className={`header-cell ${hasFilterForField('timestamp') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'timestamp' ? null : 'timestamp')}>
                     <span>Timestamp</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('ip') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'ip' ? null : 'ip')}>
+                  <div className={`header-cell ${hasFilterForField('ip') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'ip' ? null : 'ip')}>
                     <span>IP Address</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('statusCode') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'statusCode' ? null : 'statusCode')}>
+                  <div className={`header-cell ${hasFilterForField('statusCode') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'statusCode' ? null : 'statusCode')}>
                     <span>Status</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('method') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'method' ? null : 'method')}>
+                  <div className={`header-cell ${hasFilterForField('method') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'method' ? null : 'method')}>
                     <span>Method</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
-                  <div className={`header-cell ${getFilterForField('path') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'path' ? null : 'path')}>
+                  <div className={`header-cell ${hasFilterForField('path') ? 'has-filter' : ''}`} onClick={() => setActiveFilterColumn(activeFilterColumn === 'path' ? null : 'path')}>
                     <span>Path</span>
                     <svg className="filter-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm3 7h12v2H6v-2zm3 7h6v2H9v-2z"/></svg>
                   </div>
@@ -249,8 +296,24 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
               <div className="filter-popup">
                 <div className="filter-popup-header">
                   Filter: {activeFilterColumn}
-                  <button className="filter-close" onClick={() => setActiveFilterColumn(null)}>×</button>
+                  <button className="filter-close" onClick={() => { setActiveFilterColumn(null); setFilterValue(''); setFilterOperator('contains'); }}>×</button>
                 </div>
+                {/* Existing filters for this field */}
+                {getFiltersForField(activeFilterColumn).length > 0 && (
+                  <div className="filter-existing">
+                    {getFiltersForField(activeFilterColumn).map((f, idx) => {
+                      const globalIdx = filters.indexOf(f);
+                      return (
+                        <div key={idx} className="filter-existing-item">
+                          <span className="filter-existing-text">
+                            {f.operator.replace('_', ' ')} "{f.value}"
+                          </span>
+                          <button className="filter-existing-remove" onClick={() => removeFilter(globalIdx)}>×</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <select
                   value={filterOperator}
                   onChange={(e) => setFilterOperator(e.target.value as FilterOperator)}
@@ -262,19 +325,18 @@ export default function RawLogsView({ data, filename, onBack }: RawLogsViewProps
                 </select>
                 <input
                   type="text"
-                  placeholder="Filter value..."
+                  placeholder="Add filter value..."
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addFilter(activeFilterColumn)}
                   autoFocus
                 />
                 <div className="filter-actions">
-                  <button onClick={() => addFilter(activeFilterColumn)}>Apply</button>
-                  {getFilterForField(activeFilterColumn) && (
+                  <button onClick={() => addFilter(activeFilterColumn)}>Add Filter</button>
+                  {hasFilterForField(activeFilterColumn) && (
                     <button className="remove-filter" onClick={() => {
-                      removeFilter(activeFilterColumn);
-                      setActiveFilterColumn(null);
-                    }}>Remove</button>
+                      removeFieldFilters(activeFilterColumn);
+                    }}>Remove All</button>
                   )}
                 </div>
               </div>
