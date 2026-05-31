@@ -58,6 +58,38 @@ const CATEGORY_TO_EVENTID: Record<string, number[]> = {
 };
 
 /**
+ * Categories that require specific event providers (not EventID-based)
+ * These categories don't map to fixed EventIDs but must come from specific log sources.
+ * Rules using these categories should NOT match events from unrelated providers.
+ *
+ * Reference: https://github.com/SigmaHQ/sigma-specification/blob/main/appendix/sigma-appendix-taxonomy.md
+ */
+const CATEGORY_TO_PROVIDERS: Record<string, string[]> = {
+  'antivirus': [
+    'Microsoft-Windows-Windows Defender',
+    'Symantec Endpoint Protection',
+    'McAfee',
+    'Kaspersky',
+    'ESET',
+    'Sophos',
+    'Trend Micro',
+    'Bitdefender',
+    'Avast',
+    'AVG',
+    'CylancePROTECT',
+    'CrowdStrike',
+    'SentinelOne',
+    'Carbon Black',
+    'Malwarebytes',
+    'Panda Security',
+    'F-Secure',
+    'Webroot',
+    'Comodo',
+    'Norton',
+  ],
+};
+
+/**
  * Service to common EventIDs (for rules that filter by service + EventID)
  * Based on SIGMA taxonomy (sigma-appendix-taxonomy.md)
  *
@@ -333,6 +365,17 @@ export function matchesExpectedProvider(event: any, rule: CompiledSigmaRule): bo
   const eventId = event?.eventId;
   const eventProvider = event?.source || event?.Provider;
 
+  // Check category-level provider requirements first (no EventID needed)
+  // e.g., category: antivirus → must come from an AV provider
+  if (category && eventProvider && CATEGORY_TO_PROVIDERS[category]) {
+    const eventProviderLower = eventProvider.toLowerCase();
+    const allowed = CATEGORY_TO_PROVIDERS[category];
+    return allowed.some(expected =>
+      eventProviderLower === expected.toLowerCase() ||
+      eventProviderLower.includes(expected.toLowerCase())
+    );
+  }
+
   // No EventID or provider info - can't validate, allow through
   if (eventId === undefined || !eventProvider) {
     return true;
@@ -340,7 +383,7 @@ export function matchesExpectedProvider(event: any, rule: CompiledSigmaRule): bo
 
   let expectedProviders: string[] | undefined;
 
-  // Try category first (more specific)
+  // Try category + EventID combination (more specific)
   if (category) {
     const categoryKey = `${eventId}:${category}`;
     expectedProviders = EVENTID_CATEGORY_TO_PROVIDERS[categoryKey];
