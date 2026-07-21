@@ -4,7 +4,7 @@
  * Matches events against compiled SIGMA rules
  */
 
-import { CompiledSigmaRule, CompiledSelection, ConditionNode, SigmaRuleMatch, SelectionMatchResult, FieldMatchResult } from '../types';
+import { CompiledSigmaRule, CompiledRuleStatics, CompiledSelection, ConditionNode, SigmaRuleMatch, SelectionMatchResult, FieldMatchResult } from '../types';
 import { applyModifier } from './modifiers';
 import { expandPattern } from '../parser/conditionParser';
 import { extractRuleEventIDs, matchesExpectedProvider } from './optimizedMatcher';
@@ -46,6 +46,9 @@ const HIGH_FREQUENCY_FIELDS = [
   'TargetObject', 'Details', 'EventType'
 ];
 
+// Lowercased set for O(1) membership checks in the per-event indexing loop
+const HIGH_FREQUENCY_FIELDS_LOWER = new Set(HIGH_FREQUENCY_FIELDS.map(f => f.toLowerCase()));
+
 /**
  * Pre-index high-frequency fields for an event
  * Call this once per event before rule matching for optimal performance
@@ -68,7 +71,7 @@ export function preIndexEventFields(event: any): IndexedFields {
     for (const [name, value] of Object.entries(event.eventData)) {
       const keyLower = name.toLowerCase();
       if (isSecurity4688 && SYS_MON_METADATA_FIELDS.has(keyLower)) continue;
-      if (HIGH_FREQUENCY_FIELDS.some(f => f.toLowerCase() === keyLower)) {
+      if (HIGH_FREQUENCY_FIELDS_LOWER.has(keyLower)) {
         const val =
           typeof value === 'string' || typeof value === 'number'
             ? value
@@ -100,7 +103,7 @@ export function preIndexEventFields(event: any): IndexedFields {
               if (isSecurity4688 && SYS_MON_METADATA_FIELDS.has(keyLower)) {
                 continue;
               }
-              if (HIGH_FREQUENCY_FIELDS.some(f => f.toLowerCase() === keyLower)) {
+              if (HIGH_FREQUENCY_FIELDS_LOWER.has(keyLower)) {
                 indexed[name as keyof IndexedFields] = value;
               }
             }
@@ -234,23 +237,139 @@ function hasAnyField(event: any, fields: string[]): boolean {
 }
 
 /**
+ * Build (once) and cache the rule-static analysis results on the compiled rule.
+ * All of these depend only on the rule, so computing them per event×rule pair
+ * (as matchRule previously did) is pure overhead on the hot path.
+ */
+export function getRuleStatics(compiledRule: CompiledSigmaRule): CompiledRuleStatics {
+  if (compiledRule.statics) {
+    return compiledRule.statics;
+  }
+
+  const selectionNames = Array.from(compiledRule.selections.keys());
+
+  // Pre-expand ONE_OF/ALL_OF patterns (expandPattern builds a RegExp per call)
+  const patternExpansions = new Map<string, string[]>();
+  (function collect(node: ConditionNode) {
+    if ((node.type === 'ONE_OF' || node.type === 'ALL_OF') && node.pattern) {
+      if (!patternExpansions.has(node.pattern)) {
+        patternExpansions.set(node.pattern, expandPattern(node.pattern, selectionNames));
+      }
+    }
+    if (node.children) {
+      node.children.forEach(collect);
+    }
+  })(compiledRule.condition);
+
+  const eventIds = extractRuleEventIDs(compiledRule);
+  const isNegationOnly = isNegationOnlyCondition(compiledRule.condition);
+  const ruleProduct = compiledRule.rule.logsource?.product?.toLowerCase();
+
+  const statics: CompiledRuleStatics = {
+    eventIds,
+    eventIdSet: eventIds ? new Set(eventIds) : null,
+    productIncompatible: !!ruleProduct && ruleProduct !== 'windows' && ruleProduct !== 'win',
+    usesSysmonOnlyFields: ruleUsesSysmonOnlyFields(compiledRule),
+    isNegationOnly,
+    negationRequiredFields: isNegationOnly
+      ? extractFieldsFromCondition(compiledRule.condition, compiledRule.selections)
+      : [],
+    selectionNames,
+    patternExpansions,
+    requiredSelections: computeRequiredSelections(compiledRule.condition, patternExpansions)
+  };
+
+  compiledRule.statics = statics;
+  return statics;
+}
+
+/**
+ * Compute the set of selections that MUST evaluate to true for the condition
+ * to be satisfiable. Used to build sound quick-reject filters: only conditions
+ * from these selections can be treated as mandatory.
+ *
+ * - AND: union of children's required sets (all children must hold)
+ * - OR: intersection (only selections required by every branch are certain)
+ * - NOT / COUNT: nothing is required to be TRUE (negated or threshold logic)
+ * - ALL_OF: every expanded selection is required
+ * - ONE_OF: only required if the pattern expands to exactly one selection
+ */
+function computeRequiredSelections(
+  node: ConditionNode,
+  patternExpansions: Map<string, string[]>
+): Set<string> {
+  switch (node.type) {
+    case 'SELECTION':
+      return new Set([String(node.value)]);
+
+    case 'AND': {
+      const result = new Set<string>();
+      for (const child of node.children || []) {
+        for (const sel of computeRequiredSelections(child, patternExpansions)) {
+          result.add(sel);
+        }
+      }
+      return result;
+    }
+
+    case 'OR': {
+      const children = node.children || [];
+      if (children.length === 0) {
+        return new Set();
+      }
+      let intersection: Set<string> | null = null;
+      for (const child of children) {
+        const childSet = computeRequiredSelections(child, patternExpansions);
+        if (intersection === null) {
+          intersection = childSet;
+        } else {
+          const kept: string[] = [];
+          for (const sel of intersection) {
+            if (childSet.has(sel)) {
+              kept.push(sel);
+            }
+          }
+          intersection = new Set<string>(kept);
+        }
+        if (intersection.size === 0) {
+          return intersection;
+        }
+      }
+      return intersection || new Set<string>();
+    }
+
+    case 'ALL_OF':
+      return new Set(patternExpansions.get(node.pattern || '') || []);
+
+    case 'ONE_OF': {
+      const expanded = patternExpansions.get(node.pattern || '') || [];
+      return expanded.length === 1 ? new Set(expanded) : new Set();
+    }
+
+    default:
+      // NOT, COUNT: no selection is required to be true
+      return new Set();
+  }
+}
+
+/**
  * Match an event against a compiled rule
  */
 export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRuleMatch | null {
+  const statics = getRuleStatics(compiledRule);
   const isSecurity4688 = event?.eventId === 4688;
 
   // Skip rules that rely on Sysmon-only metadata for Security 4688 events
-  if (isSecurity4688 && ruleUsesSysmonOnlyFields(compiledRule)) {
+  if (isSecurity4688 && statics.usesSysmonOnlyFields) {
     return null;
   }
 
   // CRITICAL FIX: Check if event EventID matches rule's logsource category requirements
   // This prevents false positives from rules with negation logic (e.g., "not Image|contains")
   // matching events that don't have the expected fields at all (e.g., RPC logs)
-  const requiredEventIds = extractRuleEventIDs(compiledRule);
-  if (requiredEventIds !== null && requiredEventIds.length > 0) {
+  if (statics.eventIdSet !== null && statics.eventIdSet.size > 0) {
     const eventId = event?.eventId;
-    if (eventId === undefined || !requiredEventIds.includes(eventId)) {
+    if (eventId === undefined || !statics.eventIdSet.has(eventId)) {
       // Event doesn't match the required EventIDs for this rule's logsource category
       return null;
     }
@@ -259,15 +378,8 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
   // CRITICAL FIX: Logsource product validation
   // Prevents cross-platform rules from matching incompatible events
   // Example: Azure sign-in rules (product: azure) should not match Windows events
-  const ruleProduct = compiledRule.rule.logsource?.product?.toLowerCase();
-  if (ruleProduct) {
-    // For EVTX analysis, we only process Windows events
-    // If rule specifies a non-Windows product, skip it
-    const windowsProducts = ['windows', 'win'];
-    if (!windowsProducts.includes(ruleProduct)) {
-      // Rule is for a different platform (azure, linux, macos, etc.)
-      return null;
-    }
+  if (statics.productIncompatible) {
+    return null;
   }
 
   // CRITICAL FIX (Issue #34): Check if event provider matches expected provider for category+EventID
@@ -281,32 +393,39 @@ export function matchRule(event: any, compiledRule: CompiledSigmaRule): SigmaRul
   // that don't have ANY of the selection's fields (e.g., Zeek rules matching EVTX logs)
   // Example: Zeek RDP rule with "not id.orig_h|cidr: [...]" should not match Windows events
   // that lack id.orig_h field entirely
-  if (isNegationOnlyCondition(compiledRule.condition)) {
-    const requiredFields = extractFieldsFromCondition(compiledRule.condition, compiledRule.selections);
-    if (requiredFields.length > 0 && !hasAnyField(event, requiredFields)) {
+  if (statics.isNegationOnly) {
+    if (statics.negationRequiredFields.length > 0 && !hasAnyField(event, statics.negationRequiredFields)) {
       // Event doesn't have any of the fields referenced in negation-only condition
       // Skip this rule to prevent false positive
       return null;
     }
   }
 
-  // Evaluate all selections
+  // Fast path: evaluate the condition with lazy, memoized, boolean-only selection
+  // evaluation. Selections not needed to decide the condition are never evaluated,
+  // and no per-field result objects are allocated for the (overwhelmingly common)
+  // non-matching case.
+  const boolMemo = new Map<string, boolean>();
+  const conditionMatched = evaluateConditionLazy(
+    compiledRule.condition,
+    event,
+    compiledRule,
+    statics,
+    boolMemo
+  );
+
+  if (!conditionMatched) {
+    return null;
+  }
+
+  // Slow path (rare): the rule matched — re-evaluate all selections with full
+  // field-level detail for UI display. Field extraction is cached per event,
+  // so this second pass does not re-parse anything.
   const selectionResults = new Map<string, SelectionMatchResult>();
 
   for (const [name, selection] of compiledRule.selections) {
     const result = evaluateSelection(event, selection);
     selectionResults.set(name, result);
-  }
-
-  // Evaluate condition
-  const conditionMatched = evaluateCondition(
-    compiledRule.condition,
-    selectionResults,
-    Array.from(compiledRule.selections.keys())
-  );
-
-  if (!conditionMatched) {
-    return null;
   }
 
   // ALWAYS include ALL selections (not just matched ones) so users can see full context
@@ -421,59 +540,120 @@ function evaluateSelection(event: any, selection: any): SelectionMatchResult {
 }
 
 /**
- * Evaluate condition AST
+ * Boolean-only twin of evaluateSelection for the hot path: identical matching
+ * semantics (including the Security-4688 Sysmon-field skip), but allocates no
+ * per-field result objects and short-circuits as soon as the outcome is known.
  */
-function evaluateCondition(
+function evaluateSelectionBool(event: any, selection: CompiledSelection): boolean {
+  let anyConditionMatched = false;
+  let allConditionsMatched = true;
+  const isSecurity4688 = event?.eventId === 4688;
+
+  for (const condition of selection.conditions) {
+    // Skip Sysmon-only fields for Security 4688 events
+    if (isSecurity4688 && isSysmonOnlyField(condition.field)) {
+      allConditionsMatched = false;
+      if (!selection.useOrLogic) return false;
+      continue;
+    }
+
+    const fieldValue = extractField(event, condition.field);
+    let matched = false;
+
+    if (condition.requireAll) {
+      matched = condition.values.every((targetValue: string | number | null) =>
+        applyModifier(fieldValue, targetValue, condition.modifier)
+      );
+    } else {
+      for (const targetValue of condition.values) {
+        if (applyModifier(fieldValue, targetValue, condition.modifier)) {
+          matched = true;
+          break;
+        }
+      }
+    }
+
+    if (condition.negate) {
+      matched = !matched;
+    }
+
+    if (matched) {
+      anyConditionMatched = true;
+      if (selection.useOrLogic) return true;
+    } else {
+      allConditionsMatched = false;
+      if (!selection.useOrLogic) return false;
+    }
+  }
+
+  return selection.useOrLogic ? anyConditionMatched : allConditionsMatched;
+}
+
+/**
+ * Get a selection's boolean match result, evaluating it at most once per event
+ * (memoized in `memo`). Selections referenced in the condition but not defined
+ * evaluate to false, matching the previous behavior.
+ */
+function getSelectionResultBool(
+  name: string,
+  event: any,
+  compiledRule: CompiledSigmaRule,
+  memo: Map<string, boolean>
+): boolean {
+  let result = memo.get(name);
+  if (result === undefined) {
+    const selection = compiledRule.selections.get(name);
+    result = selection ? evaluateSelectionBool(event, selection) : false;
+    memo.set(name, result);
+  }
+  return result;
+}
+
+/**
+ * Evaluate condition AST lazily: selections are only evaluated when the
+ * logical structure actually needs their result, and only as booleans.
+ * Pattern expansions come precomputed from rule statics.
+ */
+function evaluateConditionLazy(
   node: ConditionNode,
-  selectionResults: Map<string, SelectionMatchResult>,
-  availableSelections: string[]
+  event: any,
+  compiledRule: CompiledSigmaRule,
+  statics: CompiledRuleStatics,
+  memo: Map<string, boolean>
 ): boolean {
   switch (node.type) {
     case 'AND':
       return node.children?.every(child =>
-        evaluateCondition(child, selectionResults, availableSelections)
+        evaluateConditionLazy(child, event, compiledRule, statics, memo)
       ) ?? false;
 
     case 'OR':
       return node.children?.some(child =>
-        evaluateCondition(child, selectionResults, availableSelections)
+        evaluateConditionLazy(child, event, compiledRule, statics, memo)
       ) ?? false;
 
     case 'NOT':
-      return !evaluateCondition(
-        node.children![0],
-        selectionResults,
-        availableSelections
-      );
+      return !evaluateConditionLazy(node.children![0], event, compiledRule, statics, memo);
 
-    case 'SELECTION': {
-      const selectionName = String(node.value);
-      const result = selectionResults.get(selectionName);
-      return result?.matched ?? false;
-    }
+    case 'SELECTION':
+      return getSelectionResultBool(String(node.value), event, compiledRule, memo);
 
     case 'ONE_OF': {
-      const pattern = node.pattern || '';
-      const matchingSelections = expandPattern(pattern, availableSelections);
-      return matchingSelections.some(sel => {
-        const result = selectionResults.get(sel);
-        return result?.matched ?? false;
-      });
+      const matchingSelections = statics.patternExpansions.get(node.pattern || '') || [];
+      return matchingSelections.some(sel =>
+        getSelectionResultBool(sel, event, compiledRule, memo)
+      );
     }
 
     case 'ALL_OF': {
-      const pattern = node.pattern || '';
-      const matchingSelections = expandPattern(pattern, availableSelections);
-      return matchingSelections.every(sel => {
-        const result = selectionResults.get(sel);
-        return result?.matched ?? false;
-      });
+      const matchingSelections = statics.patternExpansions.get(node.pattern || '') || [];
+      return matchingSelections.every(sel =>
+        getSelectionResultBool(sel, event, compiledRule, memo)
+      );
     }
 
     case 'COUNT': {
-      const selectionName = String(node.value);
-      const result = selectionResults.get(selectionName);
-      const count = result?.matched ? 1 : 0;
+      const count = getSelectionResultBool(String(node.value), event, compiledRule, memo) ? 1 : 0;
       const threshold = node.threshold || 0;
       const operator = node.operator || '>';
 

@@ -143,20 +143,30 @@ export async function autoLoadRules(
     const totalCategories = categoriesToLoad.length;
     let processedCategories = 0;
 
-    // Load each category bundle
-    for (const category of categoriesToLoad) {
-      const categoryInfo = manifest[category];
-      if (!categoryInfo) continue;
-
-      try {
-        // Fetch category bundle
-        const response = await fetch(`/sigma-rules/${categoryInfo.file}`);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // Fetch all category bundles in parallel (rule parsing below stays sequential)
+    const fetched = await Promise.all(
+      categoriesToLoad.map(async category => {
+        const categoryInfo = manifest[category];
+        if (!categoryInfo) return { category, rules: null as RuleFile[] | null, error: null as string | null };
+        try {
+          const response = await fetch(`/sigma-rules/${categoryInfo.file}`);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const rules: RuleFile[] = await response.json();
+          return { category, rules, error: null };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          return { category, rules: null, error: errorMsg };
         }
+      })
+    );
 
-        const rules: RuleFile[] = await response.json();
-
+    // Load each fetched category bundle
+    for (const { category, rules, error: fetchError } of fetched) {
+      if (fetchError !== null) {
+        result.errors.push(`Failed to load category ${category}: ${fetchError}`);
+      } else if (rules !== null) {
         // Load each rule in the category
         for (const rule of rules) {
           try {
@@ -173,18 +183,11 @@ export async function autoLoadRules(
             result.errors.push(`${rule.path}: ${errorMsg}`);
           }
         }
+      }
 
-        processedCategories++;
-        if (onProgress) {
-          onProgress(processedCategories, totalCategories);
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        result.errors.push(`Failed to load category ${category}: ${errorMsg}`);
-        processedCategories++;
-        if (onProgress) {
-          onProgress(processedCategories, totalCategories);
-        }
+      processedCategories++;
+      if (onProgress) {
+        onProgress(processedCategories, totalCategories);
       }
     }
   } catch (error) {

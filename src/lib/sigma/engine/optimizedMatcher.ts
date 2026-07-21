@@ -9,7 +9,7 @@
  */
 
 import { CompiledSigmaRule, SigmaRuleMatch, SigmaLogSource } from '../types';
-import { matchRule, preIndexEventFields } from './matcher';
+import { matchRule, preIndexEventFields, getRuleStatics, getIndexedField } from './matcher';
 import { LogEntry } from '../../../types';
 
 /**
@@ -493,7 +493,7 @@ export function filterRulesByAvailableEventIDs(
   let skippedCount = 0;
 
   for (const rule of rules) {
-    const ruleEventIds = extractRuleEventIDs(rule);
+    const ruleEventIds = getRuleStatics(rule).eventIds;
 
     if (ruleEventIds === null) {
       // Universal rule - always include
@@ -521,7 +521,7 @@ export function groupRulesByEventID(rules: CompiledSigmaRule[]): RuleGroup[] {
     // Rules are pre-filtered by platform at load time, no need to filter here
     let eventIds;
     try {
-      eventIds = extractRuleEventIDs(rule);
+      eventIds = getRuleStatics(rule).eventIds;
     } catch (e) {
       eventIds = null;
     }
@@ -529,8 +529,9 @@ export function groupRulesByEventID(rules: CompiledSigmaRule[]): RuleGroup[] {
     if (eventIds === null) {
       universalRules.push(rule);
     } else {
-      // Create a key from sorted EventIDs
-      const key = eventIds.sort((a, b) => a - b).join(',');
+      // Create a key from sorted EventIDs (copy first — the cached statics array
+      // must not be mutated by this sort)
+      const key = [...eventIds].sort((a, b) => a - b).join(',');
       const existing = rulesByEventId.get(key);
       if (existing) {
         existing.push(rule);
@@ -571,8 +572,16 @@ interface QuickFilter {
 }
 
 /**
- * Extract quick filters from a rule for fast pre-rejection
- * These are fields that MUST match for the rule to possibly match
+ * Extract quick filters from a rule for fast pre-rejection.
+ *
+ * Soundness: a filter may only be treated as mandatory if its selection MUST
+ * be true for the rule to match. Selections that appear negated ("not filter"),
+ * behind a multi-selection ONE_OF, or only in some OR branches are NOT required
+ * — building filters from them causes false negatives (dropped detections).
+ * The required-selection set comes precomputed from rule statics.
+ *
+ * Additionally, only AND-logic selections are used: in an array-based (OR
+ * logic) selection no single condition is individually required.
  */
 export function extractQuickFilters(rule: CompiledSigmaRule): QuickFilter[] {
   const filters: QuickFilter[] = [];
@@ -589,7 +598,14 @@ export function extractQuickFilters(rule: CompiledSigmaRule): QuickFilter[] {
     'TargetFilename'
   ];
 
-  for (const [, selection] of rule.selections) {
+  const requiredSelections = getRuleStatics(rule).requiredSelections;
+
+  for (const [name, selection] of rule.selections) {
+    // Only selections the condition strictly requires can produce reject filters
+    if (!requiredSelections.has(name)) continue;
+    // In OR-logic selections no single condition is individually required
+    if (selection.useOrLogic) continue;
+
     for (const condition of selection.conditions) {
       // Only extract filters for priority fields with string modifiers
       if (!priorityFields.includes(condition.field)) continue;
@@ -601,7 +617,9 @@ export function extractQuickFilters(rule: CompiledSigmaRule): QuickFilter[] {
           .filter((v): v is string => typeof v === 'string')
           .map(v => v.toLowerCase());
 
-        if (stringValues.length > 0) {
+        // Only usable if ALL values are strings — a non-string value could
+        // satisfy the condition without matching any string filter
+        if (stringValues.length > 0 && stringValues.length === condition.values.length) {
           filters.push({
             field: condition.field,
             type: modifier,
@@ -617,77 +635,73 @@ export function extractQuickFilters(rule: CompiledSigmaRule): QuickFilter[] {
 }
 
 /**
- * Check if an event could possibly match a rule based on quick filters
- * Returns false if we can definitively reject the rule without full matching
+ * Check if an event could possibly match a rule based on quick filters.
+ * Every filter comes from a condition the rule strictly requires, so if any
+ * filter's field is present but matches none of that filter's values, the
+ * full match is guaranteed to fail and the rule can be rejected.
+ * Returns false to reject, true to continue to full matching.
  */
 function quickRejectCheck(event: LogEntry, filters: QuickFilter[], fieldCache: Map<string, string>): boolean {
-  if (filters.length === 0) return true; // No filters, could match
-
-  let anyFieldPresent = false;
-
-  // For OR logic in selections, if ANY filter matches, continue
-  // For AND logic, ALL filters must match
-  // We'll be conservative and only reject if NO filter can possibly match
   for (const filter of filters) {
     let fieldValue = fieldCache.get(filter.field);
 
     if (fieldValue === undefined) {
-      // Try to extract field value from rawLine
       fieldValue = extractFieldForQuickCheck(event, filter.field);
       fieldCache.set(filter.field, fieldValue);
     }
 
-    if (!fieldValue) continue; // Field not present, skip this filter
-    anyFieldPresent = true; // At least one filter field exists in event
+    // Field not present in structured data — cannot decide here (full matching
+    // may still find it via field mappings), so this filter cannot reject
+    if (!fieldValue) continue;
 
     const lowerValue = fieldValue.toLowerCase();
 
-    // Check if ANY of the filter values match
+    // The condition needs at least one of its values to match
+    let anyValueMatched = false;
     for (const targetValue of filter.values) {
-      let matches = false;
       switch (filter.type) {
         case 'endswith':
-          matches = lowerValue.endsWith(targetValue);
+          anyValueMatched = lowerValue.endsWith(targetValue);
           break;
         case 'contains':
-          matches = lowerValue.includes(targetValue);
+          anyValueMatched = lowerValue.includes(targetValue);
           break;
         case 'startswith':
-          matches = lowerValue.startsWith(targetValue);
+          anyValueMatched = lowerValue.startsWith(targetValue);
           break;
       }
-      if (matches) return true; // Found a potential match
+      if (anyValueMatched) break;
+    }
+
+    if (!anyValueMatched) {
+      return false; // A required condition cannot match — reject the rule
     }
   }
 
-  // If no filter fields were present in the event, we can't quick-reject (pass through to full matching)
-  if (!anyFieldPresent) return true;
-
-  // If we have filters with present fields but none matched, reject
-  return false;
+  return true;
 }
 
 /**
- * Fast field extraction for quick checks (no full XML parsing)
+ * Fast field extraction for quick checks.
+ * Deliberately limited to structured EventData: raw-XML regex extraction can
+ * disagree with the DOM-parsed values used by full matching (e.g. XML entity
+ * encoding), which would make quick-reject unsound. Events without structured
+ * data simply skip quick-reject and go through full matching.
  */
 function extractFieldForQuickCheck(event: LogEntry, field: string): string {
-  // Structured EventData (preferred)
+  // Mirror extractField's exact precedence: indexed cache, direct property,
+  // then structured eventData
+  const indexed = getIndexedField(event, field);
+  if (typeof indexed === 'string' && indexed) {
+    return indexed;
+  }
+  const direct = (event as any)[field];
+  if (typeof direct === 'string' && direct) {
+    return direct;
+  }
   if (event.eventData && event.eventData[field]) {
     return event.eventData[field];
   }
-
-  // First check if it's in the rawLine using regex (faster than DOM parsing)
-  const rawLine = event.rawLine;
-  if (!rawLine) return '';
-
-  // Try to extract from common Data element patterns
-  // <Data Name="Image">C:\Windows\System32\cmd.exe</Data>
-  const regex = new RegExp(`<Data Name="${field}"[^>]*>([^<]*)</Data>`, 'i');
-  const match = rawLine.match(regex);
-  if (match) {
-    return match[1];
-  }
-
   return '';
 }
 
@@ -783,11 +797,15 @@ export async function processEventsOptimized(
       targetEvents = events;
     } else {
       // Get events matching any of the group's EventIDs
+      // (loop instead of push(...spread) — spread overflows the call stack
+      // when a single EventID has >~65k events)
       targetEvents = [];
       for (const eventId of group.eventIds) {
         const eventsForId = eventIndex.get(eventId);
         if (eventsForId) {
-          targetEvents.push(...eventsForId);
+          for (const ev of eventsForId) {
+            targetEvents.push(ev);
+          }
         }
       }
 

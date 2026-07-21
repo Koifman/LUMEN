@@ -138,6 +138,23 @@ export interface CompiledSelection {
 }
 
 /**
+ * Precomputed rule-static analysis results.
+ * Everything here depends only on the rule (never the event), so it is
+ * computed once per rule instead of once per event×rule pair.
+ */
+export interface CompiledRuleStatics {
+  eventIds: number[] | null;          // Required EventIDs (null = applies to all)
+  eventIdSet: Set<number> | null;     // Same as eventIds, as a Set for O(1) checks
+  productIncompatible: boolean;       // logsource.product is set and not Windows
+  usesSysmonOnlyFields: boolean;      // References Sysmon-only metadata fields
+  isNegationOnly: boolean;            // Condition contains only negated selections
+  negationRequiredFields: string[];   // Fields referenced by a negation-only condition
+  selectionNames: string[];           // All selection names (stable order)
+  patternExpansions: Map<string, string[]>; // ONE_OF/ALL_OF pattern -> selection names
+  requiredSelections: Set<string>;    // Selections that must match for the condition to hold
+}
+
+/**
  * Compiled SIGMA Rule
  * Pre-processed for fast matching
  */
@@ -154,6 +171,9 @@ export interface CompiledSigmaRule {
   // Performance hints
   indexedFields?: string[];  // Fields to index for fast lookup
   requiredFields?: string[]; // Fields that must exist
+
+  // Lazily-built static analysis cache (see getRuleStatics in matcher.ts)
+  statics?: CompiledRuleStatics;
 }
 
 /**
