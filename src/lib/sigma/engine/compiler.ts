@@ -280,7 +280,7 @@ export function validateCompiledRule(compiledRule: CompiledSigmaRule): {
   const referencedSelections = getReferencedSelections(compiledRule.condition);
 
   for (const ref of referencedSelections) {
-    if (!ref.includes('*') && !availableSelections.includes(ref)) {
+    if (!ref.includes('*') && ref.toLowerCase() !== 'them' && !availableSelections.includes(ref)) {
       errors.push(`Selection '${ref}' referenced in condition but not defined`);
     }
   }

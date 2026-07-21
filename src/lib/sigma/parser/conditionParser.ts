@@ -281,8 +281,13 @@ export function getReferencedSelections(condition: ConditionNode): Set<string> {
 /**
  * Expand pattern references to actual selection names
  * e.g., "selection*" matches "selection1", "selection2", etc.
+ * The keyword "them" refers to all defined selections (SIGMA spec).
  */
 export function expandPattern(pattern: string, availableSelections: string[]): string[] {
+  if (pattern.toLowerCase() === 'them') {
+    return [...availableSelections];
+  }
+
   if (!pattern.includes('*')) {
     return [pattern];
   }
